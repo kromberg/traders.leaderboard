@@ -15,9 +15,6 @@ list(APPEND LIBS ${LIB_AMQPCPP})
 foreach (_dir ${SRC_DIRS})
     file(GLOB_RECURSE _src ${_dir}/*.cpp)
     list(APPEND SRC_ALL ${_src})
-
-    file(GLOB_RECURSE _src ${_dir}/*.c)
-    list(APPEND SRC_ALL ${_src})
 endforeach()
 
 add_executable(leaderboard.out ${SRC_ALL})
