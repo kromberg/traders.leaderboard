@@ -16,6 +16,7 @@ class TcpHandler : public AMQP::TcpHandler
 private:
     typedef AMQP::TcpHandler BaseClass;
 
+
 private:
     struct ConnectionItem
     {
