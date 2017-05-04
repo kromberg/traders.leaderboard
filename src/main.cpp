@@ -41,7 +41,7 @@ void addConsumers(AMQP::Channel& channel)
     // callback operation when a message was received
     auto messageCb = [&channel](const AMQP::Message &message, uint64_t deliveryTag, bool redelivered) {
 
-        std::cout << "message received" << std::endl;
+        std::cout << "message received: " << message.body() << std::endl;
 
         // acknowledge the message
         channel.ack(deliveryTag);
@@ -89,19 +89,26 @@ int main(int argc, char* argv[])
             exit(2);
         });
 
-    while (!isCompleted)
-    {
-        std::cout << "waiting for exchange\n";
-        sleep(1);
-    }
-    channel.declareQueue("my-queue");
+    channel.declareQueue("my-queue")
+        .onSuccess([](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
+            std::cout << "Queue declared " << name << '\n';
+        })
+
+        .onError([](const char *message) {
+            // something went wrong creating the exchange
+            std::cout << "channel error: " << message << std::endl;
+            exit(2);
+        });
+
     channel.bindQueue("my-exchange", "my-queue", "my-routing-key");
 
     addConsumers(channel);
 
     writeTestData(channel);
 
-    sleep(10);
+    sleep(100);
+
+    connection.close();
 
     return 0;
 }
