@@ -15,8 +15,18 @@ void writeTestData(AMQP::Channel& channel)
 
     LOG_DEBUG(CH_PUBLISHER, "Publishing messages");
     // publish a number of messages
-    channel.publish("my-exchange", "my-key", "my first message");
-    channel.publish("my-exchange", "my-key", "another message");
+    channel.publish("my-exchange", "my-key", "user_registered(1,Alex Alex)");
+    channel.publish("my-exchange", "my-key", "user_renamed(2,Egor Egor)");
+    channel.publish("my-exchange", "my-key", "user_deal(3,time,1)");
+    channel.publish("my-exchange", "my-key", "user_deal_won(4,time,1)");
+    channel.publish("my-exchange", "my-key", "user_connected(5)");
+    channel.publish("my-exchange", "my-key", "user_disconnected(6)");
+    channel.publish("my-exchange", "my-key", "user_registered(11,Alex Alex)");
+    channel.publish("my-exchange", "my-key", "user_renamed(12,Egor Egor)");
+    channel.publish("my-exchange", "my-key", "user_deal(13,time,1)");
+    channel.publish("my-exchange", "my-key", "user_deal_won(14,time,1)");
+    channel.publish("my-exchange", "my-key", "user_connected(15)");
+    channel.publish("my-exchange", "my-key", "user_disconnected(16)");
 
     channel.commitTransaction()
         .onSuccess([CH_PUBLISHER]() {

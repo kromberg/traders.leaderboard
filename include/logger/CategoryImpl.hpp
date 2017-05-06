@@ -53,7 +53,7 @@ inline void Category::log(const Level l, const std::string& fmt, Args ... args)
 {
     if (isCategoryLevel(l))
     {
-        m_writer.write(l, "%-10s " + fmt, m_name.c_str(), args...);
+        m_writer.write(l, "%-20s " + fmt, m_name.c_str(), args...);
     }
 }
 } // namespace logger

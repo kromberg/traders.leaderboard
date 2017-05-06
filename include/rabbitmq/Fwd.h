@@ -16,7 +16,10 @@ enum Result : uint16_t
     SUCCESS,
     FAILED,
     INVSTATE,
+    INVFMT,
     QUEUE_OVERFLOW,
+    NULL_CHANNEL,
+    CMD_NOT_SUPPORTED,
 };
 
 const char* resultToStr(const Result r);

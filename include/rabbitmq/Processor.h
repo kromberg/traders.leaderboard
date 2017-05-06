@@ -12,6 +12,7 @@
 #include "../logger/LoggerFwd.h"
 
 #include "Fwd.h"
+#include "ProcessingItem.h"
 
 namespace rabbitmq
 {
@@ -32,33 +33,6 @@ private:
     std::thread m_thread;
 
 private:
-    struct ProcessingItem
-    {
-        std::shared_ptr<AMQP::TcpChannel> m_channel;
-        std::string m_message;
-        std::string m_exchange;
-        std::string m_routingkey;
-        uint64_t m_deliveryTag;
-        bool m_redelivered;
-        ProcessingItem(
-            std::shared_ptr<AMQP::TcpChannel> channel,
-            std::string&& message,
-            std::string&& exchange,
-            std::string&& routingkey,
-            const uint64_t deliveryTag,
-            const bool redelivered):
-            m_channel(channel),
-            m_message(std::move(message)),
-            m_exchange(std::move(exchange)),
-            m_routingkey(std::move(routingkey)),
-            m_deliveryTag(deliveryTag),
-            m_redelivered(redelivered)
-        {}
-        ProcessingItem(const ProcessingItem&) = delete;
-        ProcessingItem(ProcessingItem&&) = default;
-        ProcessingItem& operator=(const ProcessingItem&) = delete;
-        ProcessingItem& operator=(ProcessingItem&&) = default;
-    };
     size_t m_queueCapacity;
     std::queue<ProcessingItem> m_processingQueue;
     std::mutex m_processingQueueGuard;

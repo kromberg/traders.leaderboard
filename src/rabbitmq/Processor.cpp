@@ -1,6 +1,7 @@
 #include <logger/Logger.h>
 #include <logger/LoggerDefines.h>
 
+#include <rabbitmq/CommandsDispatcher.h>
 #include <rabbitmq/Processor.h>
 
 namespace rabbitmq
@@ -34,10 +35,13 @@ bool Processor::start()
             static_cast<uint16_t>(m_state), stateToStr(m_state));
         return false;
     }
+    LOG_INFO(m_logger, "Starting processor");
     m_state = State::STARTED;
 
     std::thread t(std::bind(&Processor::mainThreadFunc, this));
     std::swap(t, m_thread);
+
+    LOG_INFO(m_logger, "Processor is started");
 
     return true;
 }
@@ -50,9 +54,11 @@ void Processor::stop()
             static_cast<uint16_t>(m_state), stateToStr(m_state));
         return ;
     }
+    LOG_INFO(m_logger, "Stopping processor");
     m_state = State::STOPPED;
     m_processingQueueCv.notify_one();
     m_thread.join();
+    LOG_INFO(m_logger, "Processor is stopped");
 }
 
 Result Processor::processMessage(ProcessingItem&& item)
@@ -63,7 +69,19 @@ Result Processor::processMessage(ProcessingItem&& item)
         item.m_exchange.c_str(), item.m_routingkey.c_str(),
         item.m_deliveryTag, (item.m_redelivered ? "true" : "false"));
 
+    if (!item.m_channel)
+    {
+        LOG_ERROR(m_logger, "Cannot process message with NULL channel");
+        return Result::NULL_CHANNEL;
+    }
 
+    Result r = Dispatcher::processMessage(m_logger, std::move(item));
+    if (Result::SUCCESS != r)
+    {
+        LOG_ERROR(m_logger, "Cannot process message. Result: %u(%s)",
+            static_cast<uint16_t>(r), resultToStr(r));
+        return r;
+    }
 
     // acknowledge the message
     item.m_channel->ack(item.m_deliveryTag);
@@ -72,6 +90,7 @@ Result Processor::processMessage(ProcessingItem&& item)
 
 void Processor::mainThreadFunc()
 {
+    LOG_INFO(m_logger, "Processor thread is started");
     while (State::STARTED == m_state)
     {
         std::unique_lock<std::mutex> l(m_processingQueueGuard);
@@ -80,10 +99,12 @@ void Processor::mainThreadFunc()
             m_processingQueueCv.wait(l);
         }
 
+        LOG_DEBUG(m_logger, "Processing %zu messages.", m_processingQueue.size());
         while (!m_processingQueue.empty())
         {
             ProcessingItem item = std::move(m_processingQueue.front());
-            l.release();
+            m_processingQueue.pop();
+            l.unlock();
 
             Result r = processMessage(std::move(item));
             if (Result::SUCCESS != r)
@@ -96,5 +117,7 @@ void Processor::mainThreadFunc()
         }
 
     }
+    LOG_INFO(m_logger, "Processor thread is stopped");
 }
+
 } // namespace rabbitmq
