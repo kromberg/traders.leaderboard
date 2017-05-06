@@ -10,6 +10,8 @@
 
 #include <amqpcpp.h>
 
+#include "../logger/LoggerFwd.h"
+
 namespace rabbitmq
 {
 class EventLoop
@@ -35,6 +37,7 @@ private:
         stopped,
     };
 
+    logger::CategoryPtr m_logger;
 
     std::thread m_mainThread;
     std::queue<ConnectionItem> m_connectionItemsQueue;

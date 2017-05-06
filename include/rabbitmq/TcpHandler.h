@@ -3,6 +3,8 @@
 
 #include <amqpcpp.h>
 
+#include "../logger/LoggerFwd.h"
+
 #include "Fwd.h"
 
 namespace rabbitmq
@@ -14,6 +16,7 @@ private:
 
 private:
     EventLoop& m_eventLoop;
+    logger::CategoryPtr m_logger;
 
 public:
     TcpHandler(EventLoop& eventLoop);

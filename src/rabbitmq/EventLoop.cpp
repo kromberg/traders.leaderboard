@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#include <logger/Logger.h>
+#include <logger/LoggerDefines.h>
 
 #include <rabbitmq/EventLoop.h>
 
@@ -8,7 +8,9 @@ namespace rabbitmq
 {
 
 EventLoop::EventLoop()
-{}
+{
+    m_logger = logger::Logger::getLogCategory("EVENT_LOOP");
+}
 EventLoop::~EventLoop()
 {}
 
@@ -29,7 +31,7 @@ void EventLoop::stop()
 
 void EventLoop::func()
 {
-    LOG_INFO("EVENT_LOOP", "Event loop started");
+    LOG_INFO(m_logger, "Event loop started");
     while (m_isRunning)
     {
         {
@@ -45,7 +47,7 @@ void EventLoop::func()
                     });
                     size_t idx = std::distance(m_pollFds.begin(), fdsIt);
 
-                    LOG_DEBUG("EVENT_LOOP", "Erasing fd: idx = %zu; fd = %d",
+                    LOG_DEBUG(m_logger, "Erasing fd: idx = %zu; fd = %d",
                         idx, item.m_fd);
 
                     // erase
@@ -57,7 +59,7 @@ void EventLoop::func()
                 }
                 else
                 {
-                    LOG_DEBUG("EVENT_LOOP", "Adding new fd: connection = %p; "
+                    LOG_DEBUG(m_logger, "Adding new fd: connection = %p; "
                         "fd = %d; flags = %d",
                         item.m_connection, item.m_fd, item.m_flags);
 
@@ -101,7 +103,7 @@ void EventLoop::func()
         {
             if (m_pollFds[i].revents & (POLLHUP | POLLERR))
             {
-                // TODO: log error
+                // TODO: logger error
                 -- res;
             }
             else if (m_pollFds[i].revents & (POLLIN | POLLOUT))
@@ -112,7 +114,7 @@ void EventLoop::func()
             }
         }
     }
-    LOG_INFO("EVENT_LOOP", "Event loop stopped");
+    LOG_INFO(m_logger, "Event loop stopped");
 }
 
 } // namespace rabbitmq

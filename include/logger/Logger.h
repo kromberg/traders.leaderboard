@@ -1,37 +1,54 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <ctime>
-#include <chrono>
+#include <string>
+#include <cstdio>
+#include <unordered_map>
+#include <mutex>
 
-#define LOG(logger, level, ...) \
-{ \
-    static thread_local char buf[100]; \
-    std::time_t t = std::time(nullptr); \
-    std::strftime(buf, sizeof(buf), "%Y%m%dT%H:%M:%S", std::gmtime(&t)); \
-    printf("%s %-7s %-10s ", buf, level, logger); \
-    printf(__VA_ARGS__); \
-    printf("\n"); \
-}
+#include "LoggerFwd.h"
+#include "LogWriter.h"
 
-#define LOG_DEBUG(logger, ...) \
-{ \
-    LOG(logger, "DEBUG", __VA_ARGS__) \
-}
+namespace logger
+{
+class Logger
+{
+private:
+    enum class State : uint8_t
+    {
+        CREATED,
+        CONFIGURED,
+        INITIALIZED,
+        DEINITIALIZED,
+    };
 
-#define LOG_INFO(logger, ...) \
-{ \
-    LOG(logger, "INFO", __VA_ARGS__) \
-}
+    State m_state = State::CREATED;
+    LogWriter m_writer;
 
-#define LOG_WARN(logger, ...) \
-{ \
-    LOG(logger, "WARN", __VA_ARGS__) \
-}
+    // map of logger categories
+    std::unordered_map<std::string, CategoryPtr> m_loggers;
+    std::mutex m_loggerGuard;
 
-#define LOG_ERROR(logger, ...) \
-{ \
-    LOG(logger, "ERROR", __VA_ARGS__) \
-}
+    Logger() = default;
+
+public:
+    ~Logger() = default;
+    Logger(const Logger& level) = delete;
+    Logger(Logger&& level) = delete;
+    Logger& operator=(const Logger& level) = delete;
+    Logger& operator=(Logger&& level) = delete;
+
+    static Logger& getInstance();
+    static CategoryPtr getLogCategory(const std::string& name);
+    CategoryPtr getCategory(const std::string& name);
+
+    bool configure(const std::string& filename = std::string());
+    bool initialize();
+    void deinitialize();
+};
+
+} // namespace logger
+
+#include "LoggerImpl.hpp"
 
 #endif // LOGGER_H
