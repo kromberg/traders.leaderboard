@@ -25,7 +25,7 @@ public:
     Category& operator=(const Category&) = delete;
     Category& operator=(Category&&) = delete;
 
-    const Level getLevel() const;
+    const Level level() const;
     bool isCategoryLevel(const Level level) const;
 
     template <class ... Args>

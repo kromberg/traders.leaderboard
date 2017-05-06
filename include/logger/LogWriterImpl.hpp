@@ -11,7 +11,7 @@
 namespace logger
 {
 
-inline const Level LogWriter::getLevel() const
+inline const Level LogWriter::level() const
 {
     return m_level;
 }
@@ -45,7 +45,7 @@ inline bool LogWriter::initialize()
 inline void LogWriter::deinitialize()
 {}
 
-inline void LogWriter::getCurrentTime(char* const buf, const size_t size)
+inline void LogWriter::currentTimeToBuf(char* const buf, const size_t size)
 {
     std::time_t t = std::time(nullptr);
     std::strftime(buf, size, "%Y%m%dT%H:%M:%S", std::gmtime(&t));
@@ -58,7 +58,7 @@ inline void LogWriter::write(
     Args ... args)
 {
     static thread_local char timeBuf[100];
-    getCurrentTime(timeBuf, sizeof(timeBuf));
+    currentTimeToBuf(timeBuf, sizeof(timeBuf));
     fprintf(m_file, ("%s %-7s " + fmt + "\n").c_str(), timeBuf, levelToStr(level), args...);
 }
 

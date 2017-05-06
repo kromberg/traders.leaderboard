@@ -14,7 +14,7 @@ inline Category::Category(
     m_writer(writer)
 {}
 
-inline const Level Category::getLevel() const
+inline const Level Category::level() const
 {
     return m_level;
 }

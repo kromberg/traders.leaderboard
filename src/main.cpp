@@ -3,6 +3,8 @@
 #include <logger/LoggerDefines.h>
 #include <rabbitmq/EventLoop.h>
 #include <rabbitmq/TcpHandler.h>
+#include <rabbitmq/Consumer.h>
+#include <rabbitmq/Processor.h>
 
 void writeTestData(AMQP::Channel& channel)
 {
@@ -17,49 +19,18 @@ void writeTestData(AMQP::Channel& channel)
     channel.publish("my-exchange", "my-key", "another message");
 
     channel.commitTransaction()
-        .onSuccess([&]() {
+        .onSuccess([CH_PUBLISHER]() {
             LOG_DEBUG(CH_PUBLISHER, "All messages were published");
         })
-        .onError([&](const char* msg) {
+        .onError([CH_PUBLISHER](const char* msg) {
             LOG_ERROR(CH_PUBLISHER, "Error occurred while committing rabbitmq transaction. Description: %s",
                 msg);
         });
 }
 
-void addConsumers(AMQP::Channel& channel)
-{
-    logger::CategoryPtr CH_CONSUMER = logger::Logger::getLogCategory("CH_CONSUMER");
-
-    // callback function that is called when the consume operation starts
-    auto startCb = [&channel, CH_CONSUMER](const std::string &consumertag) {
-        LOG_DEBUG(CH_CONSUMER, "Consume operation started");
-    };
-
-    // callback function that is called when the consume operation failed
-    auto errorCb = [&channel, CH_CONSUMER](const char *message) {
-        LOG_ERROR(CH_CONSUMER, "Consume operation failed");
-    };
-
-    // callback operation when a message was received
-    auto messageCb = [&channel, CH_CONSUMER](const AMQP::Message &message, uint64_t deliveryTag, bool redelivered) {
-
-        std::string messageStr(message.body(), message.bodySize());
-        LOG_DEBUG(CH_CONSUMER, "Message received: %s", messageStr.c_str());
-
-        // acknowledge the message
-        channel.ack(deliveryTag);
-    };
-
-    // start consuming from the queue, and install the callbacks
-    channel.consume("my-queue")
-        .onReceived(messageCb)
-        .onSuccess(startCb)
-        .onError(errorCb);
-}
-
 int main(int argc, char* argv[])
 {
-    logger::Logger& l = logger::Logger::getInstance();
+    logger::Logger& l = logger::Logger::instance();
     if (!l.configure())
     {
         fprintf(stderr, "Cannot configure logger\n");
@@ -72,7 +43,7 @@ int main(int argc, char* argv[])
         return 3;
     }
 
-    logger::CategoryPtr RMQ_CHANNEL = logger::Logger::getLogCategory("RMQ_CHANNEL");
+    logger::CategoryPtr m_logger = logger::Logger::getLogCategory("MAIN");
 
     // creating event loop
     rabbitmq::EventLoop eventLoop;
@@ -88,37 +59,40 @@ int main(int argc, char* argv[])
     AMQP::TcpConnection connection(&myHandler, address);
 
     // and create a channel
-    AMQP::TcpChannel channel(&connection);
+    std::shared_ptr<AMQP::TcpChannel> channel(new AMQP::TcpChannel(&connection));
 
-    channel.onError([&](const char *message) {
-        LOG_ERROR(RMQ_CHANNEL, "Channel error: %s", message);
-    });
+#if 1
+    rabbitmq::ProcessorPtr processor(new rabbitmq::Processor());
+    if (!processor->start())
+    {
+        LOG_ERROR(m_logger, "Cannot start processor\n");
+        return 3;
+    }
 
-    channel.onReady([&]() {
-        LOG_INFO(RMQ_CHANNEL, "Channel is ready");
-    });
+    rabbitmq::Consumer consumer(channel);
+    consumer.attachProcessor(processor);
 
     // use the channel object to call the AMQP method you like
-    channel.declareExchange("my-exchange", AMQP::fanout)
-        .onSuccess([&]() {
-            LOG_INFO(RMQ_CHANNEL, "Exchange is ready");
-        });
+    consumer.declareExchange("my-exchange", AMQP::fanout);
+    consumer.declareQueue("my-queue");
+    consumer.channel().bindQueue("my-exchange", "my-queue", "my-routing-key");
 
-    channel.declareQueue("my-queue")
-        .onSuccess([&](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
-            LOG_INFO(RMQ_CHANNEL, "Queue declared %s. Messages count: %u. Consumers count: %u",
-                name.c_str(), messagecount, consumercount);
-        });
-
-    channel.bindQueue("my-exchange", "my-queue", "my-routing-key");
-
-    addConsumers(channel);
+    consumer.consume("my-queue");
 
     //writeTestData(channel);
 
-    sleep(100);
+    sleep(20);
 
+    processor->stop();
+
+#else
+    writeTestData(*channel);
+
+    sleep(5);
+#endif
+    
     connection.close();
+
 
     sleep(1);
 

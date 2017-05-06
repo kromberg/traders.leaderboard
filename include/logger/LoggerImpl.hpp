@@ -10,7 +10,7 @@
 namespace logger
 {
 
-inline Logger& Logger::getInstance()
+inline Logger& Logger::instance()
 {
     static Logger instance;
     return instance;
@@ -18,7 +18,7 @@ inline Logger& Logger::getInstance()
 
 inline CategoryPtr Logger::getLogCategory(const std::string& name)
 {
-    Logger& logger = getInstance();
+    Logger& logger = instance();
     return logger.getCategory(name);
 }
 
@@ -35,7 +35,7 @@ inline CategoryPtr Logger::getCategory(const std::string& name)
         auto res = m_loggers.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(name),
-            std::forward_as_tuple(new Category(name, m_writer.getLevel(), m_writer)));
+            std::forward_as_tuple(new Category(name, m_writer.level(), m_writer)));
         it = res.first;
     }
     return it->second;

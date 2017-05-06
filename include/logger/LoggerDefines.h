@@ -3,35 +3,44 @@
 
 #include "Category.h"
 
-#define LOG_DEBUG(l, ...) \
+#define LOG_DEBUG(LOGGER, ...) \
 { \
-    if (l->isCategoryLevel(logger::Level::DEBUG)) \
+    if ((LOGGER)->isCategoryLevel(logger::Level::DEBUG)) \
     { \
-        l->debug(__VA_ARGS__); \
+        (LOGGER)->debug(__VA_ARGS__); \
     } \
 }
 
-#define LOG_INFO(l, ...) \
+#define LOG_INFO(LOGGER, ...) \
 { \
-    if (l->isCategoryLevel(logger::Level::INFO)) \
+    if ((LOGGER)->isCategoryLevel(logger::Level::INFO)) \
     { \
-        l->info(__VA_ARGS__); \
+        (LOGGER)->info(__VA_ARGS__); \
     } \
 }
 
-#define LOG_WARN(l, ...) \
+#define LOG_WARN(LOGGER, ...) \
 { \
-    if (l->isCategoryLevel(logger::Level::WARN)) \
+    if ((LOGGER)->isCategoryLevel(logger::Level::WARN)) \
     { \
-        l->warn(__VA_ARGS__); \
+        (LOGGER)->warn(__VA_ARGS__); \
     } \
 }
 
-#define LOG_ERROR(l, ...) \
+#define LOG_ERROR(LOGGER, ...) \
 { \
-    if (l->isCategoryLevel(logger::Level::ERROR)) \
+    if ((LOGGER)->isCategoryLevel(logger::Level::ERROR)) \
     { \
-        l->error(__VA_ARGS__); \
+        (LOGGER)->error(__VA_ARGS__); \
+    } \
+}
+
+
+#define LOG(LOGGER, LEVEL, ...) \
+{ \
+    if ((LOGGER)->isCategoryLevel((LEVEL))) \
+    { \
+        (LOGGER)->log((LEVEL), __VA_ARGS__); \
     } \
 }
 

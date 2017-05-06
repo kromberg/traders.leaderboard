@@ -25,7 +25,7 @@ private:
     std::string m_filename;
     FILE* m_file;
 
-    static void getCurrentTime(char* const buf, const size_t size);
+    static void currentTimeToBuf(char* const buf, const size_t size);
 
     template<class... Args>
     void write(const Level level, const std::string& fmt, Args ... args);
@@ -38,7 +38,7 @@ public:
     LogWriter& operator=(const LogWriter& level) = delete;
     LogWriter& operator=(LogWriter&& level) = default;
 
-    const Level getLevel() const;
+    const Level level() const;
 
     bool configure(const std::string& filename);
     bool initialize();

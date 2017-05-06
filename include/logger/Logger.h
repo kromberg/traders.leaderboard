@@ -38,7 +38,7 @@ public:
     Logger& operator=(const Logger& level) = delete;
     Logger& operator=(Logger&& level) = delete;
 
-    static Logger& getInstance();
+    static Logger& instance();
     static CategoryPtr getLogCategory(const std::string& name);
     CategoryPtr getCategory(const std::string& name);
 
