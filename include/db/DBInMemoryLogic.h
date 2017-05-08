@@ -8,19 +8,17 @@
 #include <unordered_set>
 #include <string>
 
-#include "../logger/Fwd.h"
+#include "../logger/LoggerFwd.h"
 
 #include "DBAbstractLogic.h"
 
 namespace db
 {
-class InMemoryLogic
+class InMemoryLogic : public AbstractLogic
 {
 private:
     struct User
     {
-        std::mutex m_guard;
-
         std::string m_name;
         // todo: rework
         typedef std::time_t Time;
@@ -28,13 +26,12 @@ private:
         typedef std::map<Time, Score> ScoreByDay;
         ScoreByDay m_scoreByDay;
 
-        template<class T>
-        User(T&& name):
-            m_name(std::forward(name))
+        User(const std::string& name):
+            m_name(name)
         {}
 
         void addScore(const Time t, const Score score);
-        uint64_t getWeekScores(const Time currentTime);
+        uint64_t getWeekScores(const Time currentTime) const;
     };
     typedef std::unordered_map<uint64_t, User> UsersMap;
     UsersMap m_usersMap;
@@ -42,7 +39,22 @@ private:
     typedef std::unordered_set<uint64_t> ConnectedUserIds;
     ConnectedUserIds m_connectedUserIds;
     std::mutex m_connectedUserIdsGuard;
+
+    struct Leaderboard
+    {
+        typedef std::map<int64_t, uint64_t> ScoreToUser;
+        typedef std::unordered_map<uint64_t, ScoreToUser::iterator> UserToScore;
+
+        ScoreToUser m_scoreToUser;
+        UserToScore m_userToScore;
+    };
+    Leaderboard m_leaderboard;
+    std::mutex m_leaderboardGuard;
+
     logger::CategoryPtr m_logger;
+
+private:
+    void buildLeaderBoard();
 
 public:
     InMemoryLogic() = default;

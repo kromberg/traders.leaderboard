@@ -10,16 +10,39 @@ void InMemoryLogic::User::addScore(const Time t, const Score score)
     m_scoreByDay.emplace(t, score);
 }
 
-uint64_t InMemoryLogic::User::getWeekScores(const Time currentTime)
+uint64_t InMemoryLogic::User::getWeekScores(const Time currentTime) const
 {
     uint64_t res = 0;
 
-    auto it = std::lower_bound(m_scoreByDay.begin(), m_scoreByDay.end(), currentTime);
-    for (auto dayScore : m_scoreByDay)
+    struct tm * lastWeekTm;
+    lastWeekTm = std::localtime(&currentTime);
+    lastWeekTm->tm_mday -= 7;
+    time_t lastWeek = std::mktime(lastWeekTm);
+    auto it = m_scoreByDay.lower_bound(lastWeek);
+    for (; it != m_scoreByDay.end(); ++it)
     {
-        res += dayScore.second;
+        res += it->second;
     }
     return res;
+}
+
+void InMemoryLogic::buildLeaderBoard()
+{
+    using std::swap;
+
+    time_t currentTime = time(nullptr);
+    std::unique_lock<std::mutex> l(m_usersMapGuard);
+    Leaderboard tmpLeaderboard;
+    for (const auto& user : m_usersMap)
+    {
+        uint64_t userScore = user.second.getWeekScores(currentTime);
+        auto res = tmpLeaderboard.m_scoreToUser.emplace(userScore, user.first);
+        tmpLeaderboard.m_userToScore.emplace(user.first, res.first);
+    }
+    {
+        std::unique_lock<std::mutex> l(m_leaderboardGuard);
+        swap(tmpLeaderboard, m_leaderboard);
+    }
 }
 
 // user_registered(id,name)
@@ -29,10 +52,9 @@ Result InMemoryLogic::onUserRegistered(const uint64_t id, const std::string& nam
     auto it = m_usersMap.find(id);
     if (m_usersMap.end() != it)
     {
-        std::unique_lock<std::mutex> userLock(it->second.m_guard;);
-        l.unlock();
         if (it->second.m_name == name)
         {
+            l.unlock();
             LOG_ERROR(m_logger, "Cannot register user with the same name <id: %lu, name: %s>",
                 id, name.c_str());
             return Result::USER_ALREADY_REG;
@@ -41,6 +63,7 @@ Result InMemoryLogic::onUserRegistered(const uint64_t id, const std::string& nam
         {
             LOG_ERROR(m_logger, "Cannot register user with different names <id: %lu, name: %s, new name: %s>",
                 id, it->second.m_name.c_str(), name.c_str());
+            l.unlock();
             return Result::USER_ALREADY_REG;
         }
     }
@@ -62,11 +85,9 @@ Result InMemoryLogic::onUserRenamed(const uint64_t id, const std::string& name)
             id, name.c_str());
         return Result::USER_NOT_FOUND;
     }
-    std::unique_lock<std::mutex> userLock(it->second.m_guard;);
-    l.unlock();
 
     it->second.m_name = name;
-    userLock.unlock();
+    l.unlock();
     LOG_DEBUG(m_logger, "User was renamed <id: %lu new name: %s>",
         id, name.c_str());
     return Result::SUCCESS;
@@ -79,12 +100,11 @@ Result InMemoryLogic::onUserDeal(const uint64_t id, const std::time_t t, const i
     if (m_usersMap.end() == it)
     {
         l.unlock();
-        LOG_ERROR(m_logger, "Cannot add user deal <id: %lu, name: %s, amount: %ld>. It is not found",
-            id, name.c_str(), amount);
+        LOG_ERROR(m_logger, "Cannot add user deal <id: %lu, time: %lu, amount: %ld>. It is not found",
+            id, static_cast<uint64_t>(t), amount);
         return Result::USER_NOT_FOUND;
     }
-    std::unique_lock<std::mutex> userLock(it->second.m_guard;);
-    l.unlock();
+
     auto scoreIt = it->second.m_scoreByDay.find(t);
     if (it->second.m_scoreByDay.end() == scoreIt)
     {
@@ -94,9 +114,10 @@ Result InMemoryLogic::onUserDeal(const uint64_t id, const std::time_t t, const i
     {
         scoreIt->second += amount;
     }
+    l.unlock();
 
-    LOG_DEBUG(m_logger, "User deal was done <id: %lu, name: %s, amount: %ld>",
-        id, name.c_str(), amount);
+    LOG_DEBUG(m_logger, "User deal was done <id: %lu, time: %lu, amount: %ld>",
+        id, static_cast<uint64_t>(t), amount);
 
     return Result::SUCCESS;
 }
@@ -108,12 +129,11 @@ Result InMemoryLogic::onUserDealWon(const uint64_t id, const std::time_t t, cons
     if (m_usersMap.end() == it)
     {
         l.unlock();
-        LOG_ERROR(m_logger, "Cannot add user deal <id: %lu, name: %s, amount: %ld>. It is not found",
-            id, name.c_str(), amount);
+        LOG_ERROR(m_logger, "Cannot add user deal <id: %lu, time: %lu, amount: %ld>. It is not found",
+            id, static_cast<uint64_t>(t), amount);
         return Result::USER_NOT_FOUND;
     }
-    std::unique_lock<std::mutex> userLock(it->second.m_guard;);
-    l.unlock();
+
     auto scoreIt = it->second.m_scoreByDay.find(t);
     if (it->second.m_scoreByDay.end() == scoreIt)
     {
@@ -123,9 +143,10 @@ Result InMemoryLogic::onUserDealWon(const uint64_t id, const std::time_t t, cons
     {
         scoreIt->second += amount;
     }
+    l.unlock();
 
-    LOG_DEBUG(m_logger, "User deal was done <id: %lu, name: %s, amount: %ld>",
-        id, name.c_str(), amount);
+    LOG_DEBUG(m_logger, "User deal was done <id: %lu, time: %lu, amount: %ld>",
+        id, static_cast<uint64_t>(t), amount);
 
     return Result::SUCCESS;
 }
@@ -149,6 +170,15 @@ Result InMemoryLogic::onUserConnected(const uint64_t id)
         m_connectedUserIds.insert(id);
     }
 
+    buildLeaderBoard();
+    {
+        std::unique_lock<std::mutex> l(m_leaderboardGuard);
+        for (auto& userScore : m_leaderboard.m_scoreToUser)
+        {
+            LOG_DEBUG(m_logger, "Score [%ld]: User [%lu]", userScore.first, userScore.second);
+        }
+    }
+
     LOG_DEBUG(m_logger, "User was connected <id: %lu>", id);
 
     return Result::SUCCESS;
@@ -168,5 +198,3 @@ Result InMemoryLogic::onUserDisconnected(const uint64_t id)
 }
 
 } // namespace db
-
-#endif // DB_LOGIC_H

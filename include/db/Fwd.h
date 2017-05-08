@@ -1,6 +1,8 @@
 #ifndef DB_FWD_H
 #define DB_FWD_H
 
+#include <cstdint>
+
 namespace db
 {
 enum class Result : uint16_t

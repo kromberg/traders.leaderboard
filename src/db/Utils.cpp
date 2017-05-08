@@ -13,7 +13,7 @@ const char* resultToStr(const Result r)
         case Result::USER_ALREADY_REG:
             return "USER ALREADY REGISTERED";
         case Result::USER_NOT_FOUND:
-            returen "USER NOT FOUND";
+            return "USER NOT FOUND";
     }
     return "UNKNOWN";
 }
