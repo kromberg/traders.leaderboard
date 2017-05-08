@@ -48,6 +48,9 @@ public:
     template<class... Args>
     AMQP::Deferred& declareQueue(Args... args);
 
+    template<class... Args>
+    AMQP::Deferred& bindQueue(Args... args);
+
     // todo: return DeferredConsumer
     template<class... Args>
     AMQP::Deferred& consume(Args... args);
@@ -109,7 +112,7 @@ inline AMQP::Deferred& Consumer::declareExchange(Args... args)
                 &Consumer::onFinalizeCallback,
                 this,
                 Level::INFO,
-                "Exchange was finalized"));
+                "Exchange operation was finalized"));
 }
 
 template<class... Args>
@@ -124,7 +127,16 @@ inline AMQP::Deferred& Consumer::declareQueue(Args... args)
                 &Consumer::onFinalizeCallback,
                 this,
                 Level::INFO,
-                "Queue was finalized"));;
+                "Queue operation was finalized"));;
+}
+
+
+template<class... Args>
+inline AMQP::Deferred& Consumer::bindQueue(Args... args)
+{
+    using namespace logger;
+    using namespace std::placeholders;
+    return channel().bindQueue(args...);;
 }
 
 template<class... Args>
