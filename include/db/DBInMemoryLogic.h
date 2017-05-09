@@ -57,7 +57,7 @@ private:
     void buildLeaderBoard();
 
 public:
-    InMemoryLogic() = default;
+    InMemoryLogic();
     virtual ~InMemoryLogic() = default;
 
     // user_registered(id,name)

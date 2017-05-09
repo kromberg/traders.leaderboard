@@ -45,6 +45,11 @@ void InMemoryLogic::buildLeaderBoard()
     }
 }
 
+InMemoryLogic::InMemoryLogic()
+{
+    m_logger = logger::Logger::getLogCategory("DB_IN_MEM_LOGIC");
+}
+
 // user_registered(id,name)
 Result InMemoryLogic::onUserRegistered(const uint64_t id, const std::string& name)
 {
@@ -67,7 +72,7 @@ Result InMemoryLogic::onUserRegistered(const uint64_t id, const std::string& nam
             return Result::USER_ALREADY_REG;
         }
     }
-    m_usersMap.emplace(id, name);
+    m_usersMap.insert(std::make_pair(id, name));
     l.unlock();
     LOG_DEBUG(m_logger, "User was registered <id: %lu, name: %s>",
         id, name.c_str());
@@ -108,7 +113,7 @@ Result InMemoryLogic::onUserDeal(const uint64_t id, const std::time_t t, const i
     auto scoreIt = it->second.m_scoreByDay.find(t);
     if (it->second.m_scoreByDay.end() == scoreIt)
     {
-        it->second.m_scoreByDay.emplace(t, amount);
+        it->second.m_scoreByDay.insert(std::make_pair(t, amount));
     }
     else
     {
@@ -137,7 +142,7 @@ Result InMemoryLogic::onUserDealWon(const uint64_t id, const std::time_t t, cons
     auto scoreIt = it->second.m_scoreByDay.find(t);
     if (it->second.m_scoreByDay.end() == scoreIt)
     {
-        it->second.m_scoreByDay.emplace(t, amount);
+        it->second.m_scoreByDay.insert(std::make_pair(t, amount));
     }
     else
     {

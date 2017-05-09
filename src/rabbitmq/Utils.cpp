@@ -20,6 +20,8 @@ const char* resultToStr(const Result r)
             return "NULL CHANNEL";
         case Result::CMD_NOT_SUPPORTED:
             return "COMMAND IS NOT SUPPORTED";
+        case Result::DB_ERROR:
+            return "DB ERROR";
     }
     return "UNKNOWN";
 }

@@ -74,7 +74,7 @@ Result Processor::processMessage(ProcessingItem&& item)
         return Result::NULL_CHANNEL;
     }
 
-    Result r = m_dispatcher.processMessage(m_logger, std::move(item));
+    Result r = m_dispatcher.processMessage(std::move(item));
     if (Result::SUCCESS != r)
     {
         LOG_ERROR(m_logger, "Cannot process message. Result: %u(%s)",

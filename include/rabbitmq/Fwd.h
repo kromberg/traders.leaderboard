@@ -20,6 +20,7 @@ enum Result : uint16_t
     QUEUE_OVERFLOW,
     NULL_CHANNEL,
     CMD_NOT_SUPPORTED,
+    DB_ERROR,
 };
 
 const char* resultToStr(const Result r);

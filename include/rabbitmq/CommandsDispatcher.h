@@ -20,7 +20,7 @@ namespace rabbitmq
 class Dispatcher
 {
 private:
-    typedef std::function<Result(logger::CategoryPtr&, const std::string&, ProcessingItem&&)> MessageProcFunc;
+    typedef std::function<Result(Dispatcher&, const std::string&, ProcessingItem&&)> MessageProcFunc;
     typedef std::unordered_map<std::string, MessageProcFunc> MessageProcFuncsMap;
     static const MessageProcFuncsMap m_messageProcFuncsMap;
 
@@ -29,8 +29,7 @@ private:
 
 private:
     template<class... Args>
-    static Result getArguments(
-        logger::CategoryPtr& logger,
+    Result getArguments(
         const std::string& command,
         const std::string& str,
         const char* fmt,
@@ -49,15 +48,27 @@ private:
     // user_disconnected(id)
     static Result processUserDisconnected(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item);
 
+    // user_registered(id,name)
+    virtual Result onUserRegistered(const std::string& command, ProcessingItem&& item);
+    // user_renamed(id,name)
+    virtual Result onUserRenamed(const std::string& command, ProcessingItem&& item);
+    // user_deal(id,time,amount)
+    virtual Result onUserDeal(const std::string& command, ProcessingItem&& item);
+    // user_deal_won(id,time,amount)
+    virtual Result onUserDealWon(const std::string& command, ProcessingItem&& item);
+    // user_connected(id)
+    virtual Result onUserConnected(const std::string& command, ProcessingItem&& item);
+    // user_disconnected(id)
+    virtual Result onUserDisconnected(const std::string& command, ProcessingItem&& item);
+
 public:
     Dispatcher();
-    ~Dispatcher() = default;
+    ~Dispatcher();
     Result processMessage(ProcessingItem&& item);
 };
 
 template<class... Args>
 Result Dispatcher::getArguments(
-    logger::CategoryPtr& logger,
     const std::string& command,
     const std::string& str,
     const char* fmt,
@@ -67,7 +78,7 @@ Result Dispatcher::getArguments(
     int res = sscanf(str.c_str(), fmt, args...);
     if (res != countOfExpectedArgs)
     {
-        LOG_ERROR(logger, "Cannot process command '%s': invalid arguments format: "
+        LOG_ERROR(m_logger, "Cannot process command '%s': invalid arguments format: "
             "actual number of arguments[%d] does not equal to expected number of arguments[%zu]",
             command.c_str(), res, countOfExpectedArgs);
         return Result::INVFMT;
