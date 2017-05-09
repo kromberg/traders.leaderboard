@@ -10,6 +10,8 @@
 #include "../logger/LoggerFwd.h"
 #include "../logger/LoggerDefines.h"
 
+#include "../db/Fwd.h"
+
 #include "Fwd.h"
 #include "ProcessingItem.h"
 
@@ -22,6 +24,10 @@ private:
     typedef std::unordered_map<std::string, MessageProcFunc> MessageProcFuncsMap;
     static const MessageProcFuncsMap m_messageProcFuncsMap;
 
+    logger::CategoryPtr m_logger;
+    db::LogicPtr m_logic;
+
+private:
     template<class... Args>
     static Result getArguments(
         logger::CategoryPtr& logger,
@@ -31,20 +37,22 @@ private:
         Args... args);
 
     // user_registered(id,name)
-    static Result processUserRegistered(logger::CategoryPtr& logger, const std::string& command, ProcessingItem&& item);
+    static Result processUserRegistered(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item);
     // user_renamed(id,name)
-    static Result processUserRenamed(logger::CategoryPtr& logger, const std::string& command, ProcessingItem&& item);
+    static Result processUserRenamed(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item);
     // user_deal(id,time,amount)
-    static Result processUserDeal(logger::CategoryPtr& logger, const std::string& command, ProcessingItem&& item);
+    static Result processUserDeal(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item);
     // user_deal_won(id,time,amount)
-    static Result processUserDealWon(logger::CategoryPtr& logger, const std::string& command, ProcessingItem&& item);
+    static Result processUserDealWon(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item);
     // user_connected(id)
-    static Result processUserConnected(logger::CategoryPtr& logger, const std::string& command, ProcessingItem&& item);
+    static Result processUserConnected(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item);
     // user_disconnected(id)
-    static Result processUserDisconnected(logger::CategoryPtr& logger, const std::string& command, ProcessingItem&& item);
+    static Result processUserDisconnected(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item);
 
 public:
-    static Result processMessage(logger::CategoryPtr& logger, ProcessingItem&& item);
+    Dispatcher();
+    ~Dispatcher() = default;
+    Result processMessage(ProcessingItem&& item);
 };
 
 template<class... Args>

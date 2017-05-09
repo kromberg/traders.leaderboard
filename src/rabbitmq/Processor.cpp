@@ -1,7 +1,6 @@
 #include <logger/Logger.h>
 #include <logger/LoggerDefines.h>
 
-#include <rabbitmq/CommandsDispatcher.h>
 #include <rabbitmq/Processor.h>
 
 namespace rabbitmq
@@ -75,7 +74,7 @@ Result Processor::processMessage(ProcessingItem&& item)
         return Result::NULL_CHANNEL;
     }
 
-    Result r = Dispatcher::processMessage(m_logger, std::move(item));
+    Result r = m_dispatcher.processMessage(m_logger, std::move(item));
     if (Result::SUCCESS != r)
     {
         LOG_ERROR(m_logger, "Cannot process message. Result: %u(%s)",

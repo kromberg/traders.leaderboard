@@ -13,6 +13,7 @@
 
 #include "Fwd.h"
 #include "ProcessingItem.h"
+#include "CommandsDispatcher.h"
 
 namespace rabbitmq
 {
@@ -31,6 +32,7 @@ private:
     volatile State m_state;
     logger::CategoryPtr m_logger;
     std::thread m_thread;
+    Dispatcher m_dispatcher;
 
 private:
     size_t m_queueCapacity;

@@ -2,9 +2,13 @@
 #define DB_FWD_H
 
 #include <cstdint>
+#include <memory>
 
 namespace db
 {
+class AbstractLogic;
+typedef std::unique_ptr<AbstractLogic> LogicPtr;
+
 enum class Result : uint16_t
 {
     SUCCESS,
