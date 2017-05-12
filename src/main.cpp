@@ -17,7 +17,22 @@ void writeTestData(AMQP::Channel& channel)
     // publish a number of messages
     channel.publish("my-exchange", "my-key", "user_registered(1,Diego Gothic)");
     channel.publish("my-exchange", "my-key", "user_renamed(1,Geralt Rivia)");
+    channel.publish("my-exchange", "my-key", "user_deal(1,2017:05:10T10:10:10,100)");
     channel.publish("my-exchange", "my-key", "user_registered(2,Olaf Bjorn)");
+    channel.publish("my-exchange", "my-key", "user_deal(2,2017:05:10T10:10:10,100)");
+    channel.publish("my-exchange", "my-key", "user_registered(3,Abdula Arr)");
+    channel.publish("my-exchange", "my-key", "user_deal(3,2017:05:10T10:10:10,100)");
+    channel.publish("my-exchange", "my-key", "user_deal(3,2017:05:10T10:10:10,100)");
+    channel.publish("my-exchange", "my-key", "user_deal(3,2017:05:10T10:10:10,100)");
+    for (size_t i = 100; i < 10000; ++i)
+    {
+        std::string idStr = std::to_string(i);
+        channel.publish("my-exchange", "my-key", "user_registered(" + idStr + ",Abuda " + idStr + ")");
+        channel.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
+        channel.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
+        channel.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
+    }
+    channel.publish("my-exchange", "my-key", "user_connected(500)");
     //channel.publish("my-exchange", "my-key", "user_deal(3,time,1)");
     //channel.publish("my-exchange", "my-key", "user_deal_won(4,time,1)");
     //channel.publish("my-exchange", "my-key", "user_connected(5)");
@@ -41,6 +56,11 @@ void writeTestData(AMQP::Channel& channel)
 
 int main(int argc, char* argv[])
 {
+    bool generator = false;
+    if (argc >= 2)
+    {
+        generator = true;
+    }
     logger::Logger& l = logger::Logger::instance();
     if (!l.configure())
     {
@@ -72,36 +92,38 @@ int main(int argc, char* argv[])
     // and create a channel
     std::shared_ptr<AMQP::TcpChannel> channel(new AMQP::TcpChannel(&connection));
 
-#if 1
-    rabbitmq::ProcessorPtr processor(new rabbitmq::Processor());
-    if (!processor->start())
+    if (!generator)
     {
-        LOG_ERROR(m_logger, "Cannot start processor\n");
-        return 3;
+        rabbitmq::ProcessorPtr processor(new rabbitmq::Processor());
+        if (!processor->start())
+        {
+            LOG_ERROR(m_logger, "Cannot start processor\n");
+            return 3;
+        }
+
+        rabbitmq::Consumer consumer(channel);
+        consumer.attachProcessor(processor);
+
+        // use the channel object to call the AMQP method you like
+        consumer.declareExchange("my-exchange", AMQP::fanout);
+        consumer.declareQueue("my-queue");
+        consumer.channel().bindQueue("my-exchange", "my-queue", "my-routing-key");
+
+        consumer.consume("my-queue");
+
+        //writeTestData(channel);
+
+        sleep(20);
+
+        processor->stop();
+    }
+    else
+    {
+        writeTestData(*channel);
+
+        sleep(5);
     }
 
-    rabbitmq::Consumer consumer(channel);
-    consumer.attachProcessor(processor);
-
-    // use the channel object to call the AMQP method you like
-    consumer.declareExchange("my-exchange", AMQP::fanout);
-    consumer.declareQueue("my-queue");
-    consumer.channel().bindQueue("my-exchange", "my-queue", "my-routing-key");
-
-    consumer.consume("my-queue");
-
-    //writeTestData(channel);
-
-    sleep(20);
-
-    processor->stop();
-
-#else
-    writeTestData(*channel);
-
-    sleep(5);
-#endif
-    
     connection.close();
 
 

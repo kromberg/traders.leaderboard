@@ -182,6 +182,38 @@ Result InMemoryLogic::onUserConnected(const uint64_t id)
         {
             LOG_DEBUG(m_logger, "Score [%ld]: User [%lu]", userScore.first, userScore.second);
         }
+
+        auto it = m_leaderboard.m_userToScore.find(id);
+        if (m_leaderboard.m_userToScore.end() != it)
+        {
+            auto beginIt = it->second;
+            auto distance = std::distance(m_leaderboard.m_scoreToUser.begin(), beginIt);
+            if (distance < 10)
+            {
+                beginIt = m_leaderboard.m_scoreToUser.begin();
+            }
+            else
+            {
+                std::advance(beginIt, -10);
+            }
+
+            auto endIt = it->second;
+            distance = std::distance(endIt, m_leaderboard.m_scoreToUser.end());
+            if (distance < 10)
+            {
+                endIt = m_leaderboard.m_scoreToUser.end();
+            }
+            else
+            {
+                std::advance(endIt, 10);
+            }
+
+            for (auto scoreIt = beginIt; scoreIt != endIt; ++ scoreIt)
+            {
+                LOG_DEBUG(m_logger, "Score [%ld]: User [%lu]", scoreIt->first, scoreIt->second);
+            }
+        }
+
     }
 
     LOG_DEBUG(m_logger, "User was connected <id: %lu>", id);

@@ -34,7 +34,7 @@ Result Dispatcher::onUserRegistered(const std::string& command, ProcessingItem&&
 {
     uint64_t id;
     std::unique_ptr<char[]> buf(new char[item.m_args.size()]);
-    Result r = getArguments(command, item.m_args, "(%lu,%[^)]s", std::ref(id), buf.get());
+    Result r = getArguments(command, item.m_args, "(%lu,%[^)]", std::ref(id), buf.get());
     if (Result::SUCCESS != r)
     {
         return r;
@@ -43,7 +43,6 @@ Result Dispatcher::onUserRegistered(const std::string& command, ProcessingItem&&
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu, name: %s>",
         command.c_str(), id, buf.get());
 
-    // todo:
     db::Result dbRes = m_logic->onUserRegistered(id, buf.get());
     if (db::Result::SUCCESS != dbRes)
     {
@@ -64,7 +63,7 @@ Result Dispatcher::onUserRenamed(const std::string& command, ProcessingItem&& it
 {
     uint64_t id;
     std::unique_ptr<char[]> buf(new char[item.m_args.size()]);
-    Result r = getArguments(command, item.m_args, "(%lu,%[^)]s", std::ref(id), buf.get());
+    Result r = getArguments(command, item.m_args, "(%lu,%[^)]", std::ref(id), buf.get());
     if (Result::SUCCESS != r)
     {
         return r;
@@ -73,7 +72,11 @@ Result Dispatcher::onUserRenamed(const std::string& command, ProcessingItem&& it
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu, name: %s>",
         command.c_str(), id, buf.get());
 
-    // todo:
+    db::Result dbRes = m_logic->onUserRenamed(id, buf.get());
+    if (db::Result::SUCCESS != dbRes)
+    {
+        return Result::DB_ERROR;
+    }
 
     return Result::SUCCESS;
 }
@@ -87,6 +90,25 @@ Result Dispatcher::processUserDeal(Dispatcher& dispatcher, const std::string& co
 // user_deal(id,time,amount)
 Result Dispatcher::onUserDeal(const std::string& command, ProcessingItem&& item)
 {
+    uint64_t id;
+    std::unique_ptr<char[]> timeBuf(new char[item.m_args.size()]);
+    int64_t amount;
+    Result r = getArguments(command, item.m_args, "(%lu,%[^','],%ld)", std::ref(id), timeBuf.get(), std::ref(amount));
+    if (Result::SUCCESS != r)
+    {
+        return r;
+    }
+
+    struct tm timeStruct;
+    strptime(timeBuf.get(), "%Y:%m:%dT%H:%M:%S", &timeStruct);
+    time_t t = mktime(&timeStruct);
+
+    db::Result dbRes = m_logic->onUserDeal(id, t, amount);
+    if (db::Result::SUCCESS != dbRes)
+    {
+        return Result::DB_ERROR;
+    }
+
     return Result::SUCCESS;
 }
 
@@ -99,6 +121,25 @@ Result Dispatcher::processUserDealWon(Dispatcher& dispatcher, const std::string&
 // user_deal_won(id,time,amount)
 Result Dispatcher::onUserDealWon(const std::string& command, ProcessingItem&& item)
 {
+    uint64_t id;
+    std::unique_ptr<char[]> timeBuf(new char[item.m_args.size()]);
+    int64_t amount;
+    Result r = getArguments(command, item.m_args, "(%lu,%[^','],%ld)", std::ref(id), timeBuf.get(), std::ref(amount));
+    if (Result::SUCCESS != r)
+    {
+        return r;
+    }
+
+    struct tm timeStruct;
+    strptime(timeBuf.get(), "%Y:%m:%dT%H:%M:%S", &timeStruct);
+    time_t t = mktime(&timeStruct);
+
+    db::Result dbRes = m_logic->onUserDealWon(id, t, amount);
+    if (db::Result::SUCCESS != dbRes)
+    {
+        return Result::DB_ERROR;
+    }
+
     return Result::SUCCESS;
 }
 
@@ -121,7 +162,11 @@ Result Dispatcher::onUserConnected(const std::string& command, ProcessingItem&& 
 
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu>", command.c_str(), id);
 
-    // todo:
+    db::Result dbRes = m_logic->onUserConnected(id);
+    if (db::Result::SUCCESS != dbRes)
+    {
+        return Result::DB_ERROR;
+    }
 
     return Result::SUCCESS;
 }
@@ -144,7 +189,11 @@ Result Dispatcher::onUserDisconnected(const std::string& command, ProcessingItem
 
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu>", command.c_str(), id);
 
-    // todo:
+    db::Result dbRes = m_logic->onUserDisconnected(id);
+    if (db::Result::SUCCESS != dbRes)
+    {
+        return Result::DB_ERROR;
+    }
 
     return Result::SUCCESS;
 }
