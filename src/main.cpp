@@ -4,6 +4,7 @@
 #include <rabbitmq/EventLoop.h>
 #include <rabbitmq/TcpHandler.h>
 #include <rabbitmq/Consumer.h>
+#include <rabbitmq/Handler.h>
 #include <rabbitmq/Processor.h>
 
 void writeTestData(AMQP::Channel& channel)
@@ -107,7 +108,7 @@ int main(int argc, char* argv[])
         // use the channel object to call the AMQP method you like
         consumer.declareExchange("my-exchange", AMQP::fanout);
         consumer.declareQueue("my-queue");
-        consumer.channel().bindQueue("my-exchange", "my-queue", "my-routing-key");
+        consumer.bindQueue("my-exchange", "my-queue", "my-routing-key");
 
         consumer.consume("my-queue");
 
@@ -119,6 +120,13 @@ int main(int argc, char* argv[])
     }
     else
     {
+        rabbitmq::Handler handler(channel);
+
+        // use the channel object to call the AMQP method you like
+        handler.declareExchange("my-exchange", AMQP::fanout);
+        handler.declareQueue("my-queue");
+        handler.bindQueue("my-exchange", "my-queue", "my-routing-key");
+
         writeTestData(*channel);
 
         sleep(5);

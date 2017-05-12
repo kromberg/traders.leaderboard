@@ -178,10 +178,10 @@ Result InMemoryLogic::onUserConnected(const uint64_t id)
     buildLeaderBoard();
     {
         std::unique_lock<std::mutex> l(m_leaderboardGuard);
-        for (auto& userScore : m_leaderboard.m_scoreToUser)
+        /*for (auto& userScore : m_leaderboard.m_scoreToUser)
         {
             LOG_DEBUG(m_logger, "Score [%ld]: User [%lu]", userScore.first, userScore.second);
-        }
+        }*/
 
         auto it = m_leaderboard.m_userToScore.find(id);
         if (m_leaderboard.m_userToScore.end() != it)

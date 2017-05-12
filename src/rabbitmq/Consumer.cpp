@@ -6,39 +6,6 @@
 namespace rabbitmq
 {
 
-void Consumer::onStartCallback(const std::string &consumertag)
-{
-    LOG_DEBUG(m_logger, "Consume operation started. Consumer tag: %s",
-        consumertag.c_str());
-}
-
-void Consumer::onErrorCallback(const char *message)
-{
-    LOG_ERROR(m_logger, "Consumer error. Message: %s", message);
-}
-
-void Consumer::onReadyCallback()
-{
-    LOG_INFO(m_logger, "Channel is ready");
-}
-
-void Consumer::onSuccessCallback(const logger::Level level, const char* logMessage)
-{
-    LOG(m_logger, level, "%s", logMessage);
-}
-
-void Consumer::onFinalizeCallback(const logger::Level level, const char* logMessage)
-{
-    LOG(m_logger, level, "%s", logMessage);
-}
-
-void Consumer::onQueueSuccessCallback(
-    const std::string &name, uint32_t messagecount, uint32_t consumercount)
-{
-    LOG_INFO(m_logger, "Queue declared %s. Messages count: %u. Consumers count: %u",
-        name.c_str(), messagecount, consumercount);
-}
-
 void Consumer::onMessageCallback(
     const AMQP::Message &message, uint64_t deliveryTag, bool redelivered)
 {

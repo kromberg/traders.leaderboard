@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(leaderboard C CXX)
 
 # set compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O2 -g -m64 -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O0 -g -m64 -Wall -Werror")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 

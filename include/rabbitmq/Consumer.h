@@ -9,24 +9,17 @@
 #include "../logger/LoggerFwd.h"
 
 #include "Fwd.h"
+#include "Handler.h"
 
 namespace rabbitmq
 {
 
-class Consumer
+class Consumer : public Handler
 {
-private:
-    logger::CategoryPtr m_logger;
-    std::shared_ptr<AMQP::TcpChannel> m_channel;
+protected:
     ProcessorPtr m_processor;
 
-private:
-    void onStartCallback(const std::string &consumertag);
-    void onErrorCallback(const char *message);
-    void onReadyCallback();
-    void onSuccessCallback(const logger::Level level, const char* logMessage);
-    void onFinalizeCallback(const logger::Level level, const char* logMessage);
-    void onQueueSuccessCallback(const std::string &name, uint32_t messagecount, uint32_t consumercount);
+protected:
     void onMessageCallback(const AMQP::Message &message, uint64_t deliveryTag, bool redelivered);
 
 public:
@@ -40,17 +33,6 @@ public:
 
     void attachProcessor(ProcessorPtr& processor);
 
-    AMQP::TcpChannel& channel();
-
-    template<class... Args>
-    AMQP::Deferred& declareExchange(Args... args);
-
-    template<class... Args>
-    AMQP::Deferred& declareQueue(Args... args);
-
-    template<class... Args>
-    AMQP::Deferred& bindQueue(Args... args);
-
     // todo: return DeferredConsumer
     template<class... Args>
     AMQP::Deferred& consume(Args... args);
@@ -60,83 +42,20 @@ public:
 // INLINE
 ////////////////////////////////////////////////////////////////////////////////
 inline Consumer::Consumer(AMQP::TcpConnection* connection):
-    m_channel(new AMQP::TcpChannel(connection))
+    Handler(connection)
 {
-    using namespace std::placeholders;
-
     m_logger = logger::Logger::getLogCategory("RMQ_CONSUMER");
-
-    channel().onError(std::bind(&Consumer::onErrorCallback, this, _1));
-    channel().onReady(std::bind(&Consumer::onReadyCallback, this));
 }
 
 inline Consumer::Consumer(std::shared_ptr<AMQP::TcpChannel>& _channel):
-    m_channel(_channel)
+    Handler(_channel)
 {
-    using namespace std::placeholders;
-
-    if (!m_channel)
-    {
-        throw std::runtime_error("Cannot create consumer with empty channel");
-    }
-
     m_logger = logger::Logger::getLogCategory("RMQ_CONSUMER");
-
-    channel().onError(std::bind(&Consumer::onErrorCallback, this, _1));
-    channel().onReady(std::bind(&Consumer::onReadyCallback, this));
 }
 
 inline void Consumer::attachProcessor(ProcessorPtr& processor)
 {
     atomic_store(&m_processor, processor);
-}
-
-inline AMQP::TcpChannel& Consumer::channel()
-{
-    return *m_channel;
-}
-
-template<class... Args>
-inline AMQP::Deferred& Consumer::declareExchange(Args... args)
-{
-    using namespace logger;
-    return channel().declareExchange(args...)
-        .onSuccess(
-            std::bind(
-                &Consumer::onSuccessCallback,
-                this,
-                Level::INFO,
-                "Exchange was successfully declared"))
-        .onFinalize(
-            std::bind(
-                &Consumer::onFinalizeCallback,
-                this,
-                Level::INFO,
-                "Exchange operation was finalized"));
-}
-
-template<class... Args>
-inline AMQP::Deferred& Consumer::declareQueue(Args... args)
-{
-    using namespace logger;
-    using namespace std::placeholders;
-    return channel().declareQueue(args...)
-        .onSuccess(std::bind(&Consumer::onQueueSuccessCallback, this, _1, _2, _3))
-        .onFinalize(
-            std::bind(
-                &Consumer::onFinalizeCallback,
-                this,
-                Level::INFO,
-                "Queue operation was finalized"));;
-}
-
-
-template<class... Args>
-inline AMQP::Deferred& Consumer::bindQueue(Args... args)
-{
-    using namespace logger;
-    using namespace std::placeholders;
-    return channel().bindQueue(args...);;
 }
 
 template<class... Args>
