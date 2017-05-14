@@ -12,7 +12,7 @@ void writeTestData(rabbitmq::Publisher& publisher)
 {
     // start a transaction
     publisher.startTransaction();
-    for (size_t i = 1; i < 10000; ++i)
+    for (size_t i = 1; i < 1000; ++i)
     {
         std::string idStr = std::to_string(i);
         {

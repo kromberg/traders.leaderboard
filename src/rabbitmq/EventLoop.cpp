@@ -47,8 +47,8 @@ void EventLoop::func()
                     });
                     if (m_pollFds.end() == fdsIt)
                     {
-                        LOG_DEBUG(m_logger, "Trying to remove fd: idx = %zu; fd = %d that is not present",
-                            idx, item.m_fd);
+                        LOG_DEBUG(m_logger, "Trying to remove fd = %d that is not present",
+                            item.m_fd);
                     }
                     else
                     {
