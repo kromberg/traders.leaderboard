@@ -30,13 +30,6 @@ private:
         {}
     };
 
-    enum class State
-    {
-        created,
-        started,
-        stopped,
-    };
-
     logger::CategoryPtr m_logger;
 
     std::thread m_mainThread;
@@ -46,7 +39,6 @@ private:
     std::vector<ConnectionItem> m_connectionItems;
     std::vector<pollfd> m_pollFds;
 
-    //State m_state;
     volatile bool m_isRunning = false;
 
 private:
@@ -71,7 +63,7 @@ inline void EventLoop::addConnectionItem(Args... args)
 {
     std::unique_lock<std::mutex> l(m_connectionItemsQueueGuard);
 
-    m_connectionItemsQueue.emplace(args...);
+    m_connectionItemsQueue.emplace(std::forward<Args>(args)...);
 }
 
 } // namespace rabbitmq

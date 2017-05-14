@@ -45,38 +45,69 @@ void EventLoop::func()
                     auto fdsIt = std::find_if(m_pollFds.begin(), m_pollFds.end(), [&item](const pollfd& fd) -> bool {
                         return fd.fd == item.m_fd;
                     });
-                    size_t idx = std::distance(m_pollFds.begin(), fdsIt);
+                    if (m_pollFds.end() == fdsIt)
+                    {
+                        LOG_DEBUG(m_logger, "Trying to remove fd: idx = %zu; fd = %d that is not present",
+                            idx, item.m_fd);
+                    }
+                    else
+                    {
+                        size_t idx = std::distance(m_pollFds.begin(), fdsIt);
 
-                    LOG_DEBUG(m_logger, "Erasing fd: idx = %zu; fd = %d",
-                        idx, item.m_fd);
+                        LOG_DEBUG(m_logger, "Erasing fd: idx = %zu; fd = %d",
+                            idx, item.m_fd);
 
-                    // erase
-                    m_pollFds.erase(fdsIt);
+                        // erase
+                        m_pollFds.erase(fdsIt);
 
-                    auto connectionItemIt = m_connectionItems.begin();
-                    std::advance(connectionItemIt, idx);
-                    m_connectionItems.erase(connectionItemIt);
+                        auto connectionItemIt = m_connectionItems.begin();
+                        std::advance(connectionItemIt, idx);
+                        m_connectionItems.erase(connectionItemIt);
+                    }
                 }
                 else
                 {
-                    LOG_DEBUG(m_logger, "Adding new fd: connection = %p; "
-                        "fd = %d; flags = %d",
-                        item.m_connection, item.m_fd, item.m_flags);
+                    // remove item
+                    auto fdsIt = std::find_if(m_pollFds.begin(), m_pollFds.end(), [&item](const pollfd& fd) -> bool {
+                        return fd.fd == item.m_fd;
+                    });
+                    if (m_pollFds.end() == fdsIt)
+                    {
+                        LOG_DEBUG(m_logger, "Adding new fd: connection = %p; "
+                            "fd = %d; flags = %d",
+                            item.m_connection, item.m_fd, item.m_flags);
 
-                    pollfd newfd;
-                    memset(&newfd, sizeof(newfd), 0);
-                    newfd.fd = item.m_fd;
-                    newfd.events = POLLERR | POLLHUP | POLLNVAL;
-                    if (item.m_flags & AMQP::readable)
-                    {
-                        newfd.events |= POLLIN;
+                        pollfd newfd;
+                        memset(&newfd, sizeof(newfd), 0);
+                        newfd.fd = item.m_fd;
+                        newfd.events = POLLERR | POLLHUP | POLLNVAL;
+                        if (item.m_flags & AMQP::readable)
+                        {
+                            newfd.events |= POLLIN;
+                        }
+                        if (item.m_flags & AMQP::writable)
+                        {
+                            newfd.events |= POLLOUT;
+                        }
+                        m_pollFds.emplace_back(std::move(newfd));
+                        m_connectionItems.emplace_back(std::move(item));
+                        continue;
                     }
-                    if (item.m_flags & AMQP::writable)
+                    else
                     {
-                        newfd.events |= POLLOUT;
+                        LOG_DEBUG(m_logger, "Updating fd: fd = %d, flags = %d",
+                            item.m_fd, item.m_flags);
+
+                        fdsIt->events = POLLERR | POLLHUP | POLLNVAL;
+                        if (item.m_flags & AMQP::readable)
+                        {
+                            fdsIt->events |= POLLIN;
+                        }
+                        if (item.m_flags & AMQP::writable)
+                        {
+                            fdsIt->events |= POLLOUT;
+                        }
                     }
-                    m_pollFds.emplace_back(std::move(newfd));
-                    m_connectionItems.emplace_back(std::move(item));
                 }
 
                 m_connectionItemsQueue.pop();
@@ -88,14 +119,14 @@ void EventLoop::func()
             continue;
         }
         int res = poll(&m_pollFds[0], m_pollFds.size(), 100);
-        //std::cout << "Poll result: " << res << '\n';
         if (res < 0)
         {
-            // todo: handle error
+            LOG_ERROR(m_logger, "Poll operation failed. Errno: %d(%s)",
+                errno, std::strerror(errno));
+            continue;
         }
         else if (res == 0)
         {
-
             continue;
         }
 
@@ -103,7 +134,8 @@ void EventLoop::func()
         {
             if (m_pollFds[i].revents & (POLLHUP | POLLERR))
             {
-                // TODO: logger error
+                LOG_ERROR(m_logger, "FD %d is bad. Errno: %d(%s)",
+                    m_connectionItems[i].m_fd, errno, std::strerror(errno));
                 -- res;
             }
             else if (m_pollFds[i].revents & (POLLIN | POLLOUT))

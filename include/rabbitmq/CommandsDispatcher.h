@@ -75,7 +75,7 @@ Result Dispatcher::getArguments(
     Args... args)
 {
     const size_t countOfExpectedArgs = sizeof...(Args);
-    int res = sscanf(str.c_str(), fmt, args...);
+    int res = sscanf(str.c_str(), fmt, std::forward<Args>(args)...);
     if (res != countOfExpectedArgs)
     {
         LOG_ERROR(m_logger, "Cannot process command '%s': invalid arguments format: "

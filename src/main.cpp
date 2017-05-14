@@ -4,55 +4,39 @@
 #include <rabbitmq/EventLoop.h>
 #include <rabbitmq/TcpHandler.h>
 #include <rabbitmq/Consumer.h>
+#include <rabbitmq/Publisher.h>
 #include <rabbitmq/Handler.h>
 #include <rabbitmq/Processor.h>
 
-void writeTestData(AMQP::Channel& channel)
+void writeTestData(rabbitmq::Publisher& publisher)
 {
-    logger::CategoryPtr CH_PUBLISHER = logger::Logger::getLogCategory("CH_PUBLISHER");
-    LOG_DEBUG(CH_PUBLISHER, "Starting transaction");
     // start a transaction
-    channel.startTransaction();
-
-    LOG_DEBUG(CH_PUBLISHER, "Publishing messages");
-    // publish a number of messages
-    channel.publish("my-exchange", "my-key", "user_registered(1,Diego Gothic)");
-    channel.publish("my-exchange", "my-key", "user_renamed(1,Geralt Rivia)");
-    channel.publish("my-exchange", "my-key", "user_deal(1,2017:05:10T10:10:10,100)");
-    channel.publish("my-exchange", "my-key", "user_registered(2,Olaf Bjorn)");
-    channel.publish("my-exchange", "my-key", "user_deal(2,2017:05:10T10:10:10,100)");
-    channel.publish("my-exchange", "my-key", "user_registered(3,Abdula Arr)");
-    channel.publish("my-exchange", "my-key", "user_deal(3,2017:05:10T10:10:10,100)");
-    channel.publish("my-exchange", "my-key", "user_deal(3,2017:05:10T10:10:10,100)");
-    channel.publish("my-exchange", "my-key", "user_deal(3,2017:05:10T10:10:10,100)");
-    for (size_t i = 100; i < 10000; ++i)
+    publisher.startTransaction();
+    for (size_t i = 1; i < 10000; ++i)
     {
         std::string idStr = std::to_string(i);
-        channel.publish("my-exchange", "my-key", "user_registered(" + idStr + ",Abuda " + idStr + ")");
-        channel.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
-        channel.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
-        channel.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
+        {
+            std::string message("user_registered(" + idStr + ",Abuda " + idStr + ")");
+            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
+        }
+        {
+            std::string message("user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
+            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
+        }
+        {
+            std::string message("user_deal_won(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
+            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
+        }
+        {
+            std::string message("user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
+            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
+        }
     }
-    channel.publish("my-exchange", "my-key", "user_connected(500)");
-    //channel.publish("my-exchange", "my-key", "user_deal(3,time,1)");
-    //channel.publish("my-exchange", "my-key", "user_deal_won(4,time,1)");
-    //channel.publish("my-exchange", "my-key", "user_connected(5)");
-    //channel.publish("my-exchange", "my-key", "user_disconnected(6)");
-    //channel.publish("my-exchange", "my-key", "user_registered(11,Alex Alex)");
-    //channel.publish("my-exchange", "my-key", "user_renamed(12,Egor Egor)");
-    //channel.publish("my-exchange", "my-key", "user_deal(13,time,1)");
-    //channel.publish("my-exchange", "my-key", "user_deal_won(14,time,1)");
-    //channel.publish("my-exchange", "my-key", "user_connected(15)");
-    //channel.publish("my-exchange", "my-key", "user_disconnected(16)");
 
-    channel.commitTransaction()
-        .onSuccess([CH_PUBLISHER]() {
-            LOG_DEBUG(CH_PUBLISHER, "All messages were published");
-        })
-        .onError([CH_PUBLISHER](const char* msg) {
-            LOG_ERROR(CH_PUBLISHER, "Error occurred while committing rabbitmq transaction. Description: %s",
-                msg);
-        });
+    publisher.publish("my-exchange", "my-key", "user_connected(500)");
+    //publisher.publish("my-exchange", "my-key", "user_disconnected(500)");
+
+    publisher.commitTransaction();
 }
 
 int main(int argc, char* argv[])
@@ -114,22 +98,22 @@ int main(int argc, char* argv[])
 
         //writeTestData(channel);
 
-        sleep(20);
+        sleep(50);
 
         processor->stop();
     }
     else
     {
-        rabbitmq::Handler handler(channel);
+        rabbitmq::Publisher publisher(channel);
 
         // use the channel object to call the AMQP method you like
-        handler.declareExchange("my-exchange", AMQP::fanout);
-        handler.declareQueue("my-queue");
-        handler.bindQueue("my-exchange", "my-queue", "my-routing-key");
+        publisher.declareExchange("my-exchange", AMQP::fanout);
+        publisher.declareQueue("my-queue");
+        publisher.bindQueue("my-exchange", "my-queue", "my-routing-key");
 
-        writeTestData(*channel);
+        writeTestData(publisher);
 
-        sleep(5);
+        sleep(20);
     }
 
     connection.close();

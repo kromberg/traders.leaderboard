@@ -91,7 +91,7 @@ template<class... Args>
 inline AMQP::Deferred& Handler::declareExchange(Args... args)
 {
     using namespace logger;
-    return channel().declareExchange(args...)
+    return channel().declareExchange(std::forward<Args>(args)...)
         .onSuccess(
             std::bind(
                 &Handler::onSuccessCallback,
@@ -111,7 +111,7 @@ inline AMQP::Deferred& Handler::declareQueue(Args... args)
 {
     using namespace logger;
     using namespace std::placeholders;
-    return channel().declareQueue(args...)
+    return channel().declareQueue(std::forward<Args>(args)...)
         .onSuccess(std::bind(&Handler::onQueueSuccessCallback, this, _1, _2, _3))
         .onFinalize(
             std::bind(
@@ -124,9 +124,7 @@ inline AMQP::Deferred& Handler::declareQueue(Args... args)
 template<class... Args>
 inline AMQP::Deferred& Handler::bindQueue(Args... args)
 {
-    using namespace logger;
-    using namespace std::placeholders;
-    return channel().bindQueue(args...);;
+    return channel().bindQueue(std::forward<Args>(args)...);
 }
 
 } // namespace rabbitmq

@@ -59,7 +59,7 @@ inline void LogWriter::write(
 {
     static thread_local char timeBuf[100];
     currentTimeToBuf(timeBuf, sizeof(timeBuf));
-    fprintf(m_file, ("%s %-7s " + fmt + "\n").c_str(), timeBuf, levelToStr(level), args...);
+    fprintf(m_file, ("%s %-7s " + fmt + "\n").c_str(), timeBuf, levelToStr(level), std::forward<Args>(args)...);
 }
 
 } // namespace logger

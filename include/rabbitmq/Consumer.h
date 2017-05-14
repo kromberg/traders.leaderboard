@@ -63,7 +63,7 @@ inline AMQP::Deferred& Consumer::consume(Args... args)
 {
     using namespace logger;
     using namespace std::placeholders;
-    return channel().consume(args...)
+    return channel().consume(std::forward<Args>(args)...)
         .onReceived(std::bind(&Consumer::onMessageCallback, this, _1, _2, _3))
         .onSuccess(std::bind(&Consumer::onStartCallback, this, _1))
         .onError(std::bind(&Consumer::onErrorCallback, this, _1))
