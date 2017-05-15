@@ -1,5 +1,5 @@
 #include <memory>
-#include <db/DBInMemoryLogic.h>
+
 #include <rabbitmq/CommandsDispatcher.h>
 
 namespace rabbitmq
@@ -17,7 +17,6 @@ const Dispatcher::MessageProcFuncsMap Dispatcher::m_messageProcFuncsMap =
 
 Dispatcher::Dispatcher()
 {
-    m_logic.reset(new db::InMemoryLogic());
     m_logger = logger::Logger::getLogCategory("RMQ_DISPATCHER");
 }
 
@@ -43,8 +42,8 @@ Result Dispatcher::onUserRegistered(const std::string& command, ProcessingItem&&
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu, name: %s>",
         command.c_str(), id, buf.get());
 
-    db::Result dbRes = m_logic->onUserRegistered(id, buf.get());
-    if (db::Result::SUCCESS != dbRes)
+    app::Result appRes = m_logic.onUserRegistered(id, buf.get());
+    if (app::Result::SUCCESS != appRes)
     {
         return Result::DB_ERROR;
     }
@@ -72,8 +71,8 @@ Result Dispatcher::onUserRenamed(const std::string& command, ProcessingItem&& it
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu, name: %s>",
         command.c_str(), id, buf.get());
 
-    db::Result dbRes = m_logic->onUserRenamed(id, buf.get());
-    if (db::Result::SUCCESS != dbRes)
+    app::Result appRes = m_logic.onUserRenamed(id, buf.get());
+    if (app::Result::SUCCESS != appRes)
     {
         return Result::DB_ERROR;
     }
@@ -103,8 +102,8 @@ Result Dispatcher::onUserDeal(const std::string& command, ProcessingItem&& item)
     strptime(timeBuf.get(), "%Y:%m:%dT%H:%M:%S", &timeStruct);
     time_t t = mktime(&timeStruct);
 
-    db::Result dbRes = m_logic->onUserDeal(id, t, amount);
-    if (db::Result::SUCCESS != dbRes)
+    app::Result appRes = m_logic.onUserDeal(id, t, amount);
+    if (app::Result::SUCCESS != appRes)
     {
         return Result::DB_ERROR;
     }
@@ -134,8 +133,8 @@ Result Dispatcher::onUserDealWon(const std::string& command, ProcessingItem&& it
     strptime(timeBuf.get(), "%Y:%m:%dT%H:%M:%S", &timeStruct);
     time_t t = mktime(&timeStruct);
 
-    db::Result dbRes = m_logic->onUserDealWon(id, t, amount);
-    if (db::Result::SUCCESS != dbRes)
+    app::Result appRes = m_logic.onUserDealWon(id, t, amount);
+    if (app::Result::SUCCESS != appRes)
     {
         return Result::DB_ERROR;
     }
@@ -162,8 +161,8 @@ Result Dispatcher::onUserConnected(const std::string& command, ProcessingItem&& 
 
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu>", command.c_str(), id);
 
-    db::Result dbRes = m_logic->onUserConnected(id);
-    if (db::Result::SUCCESS != dbRes)
+    app::Result appRes = m_logic.onUserConnected(id);
+    if (app::Result::SUCCESS != appRes)
     {
         return Result::DB_ERROR;
     }
@@ -189,8 +188,8 @@ Result Dispatcher::onUserDisconnected(const std::string& command, ProcessingItem
 
     LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu>", command.c_str(), id);
 
-    db::Result dbRes = m_logic->onUserDisconnected(id);
-    if (db::Result::SUCCESS != dbRes)
+    app::Result appRes = m_logic.onUserDisconnected(id);
+    if (app::Result::SUCCESS != appRes)
     {
         return Result::DB_ERROR;
     }

@@ -12,7 +12,7 @@ void writeTestData(rabbitmq::Publisher& publisher)
 {
     // start a transaction
     publisher.startTransaction();
-    for (size_t i = 1; i < 1000; ++i)
+    for (size_t i = 1; i < 10000; ++i)
     {
         std::string idStr = std::to_string(i);
         {
@@ -31,12 +31,20 @@ void writeTestData(rabbitmq::Publisher& publisher)
             std::string message("user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
             publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
         }
+
+        if (i % 100 == 0)
+        {
+            publisher.commitTransaction();
+            publisher.waitTransactionEnd();
+            publisher.startTransaction();
+        }
     }
 
-    publisher.publish("my-exchange", "my-key", "user_connected(500)");
+    //publisher.publish("my-exchange", "my-key", "user_connected(10)");
     //publisher.publish("my-exchange", "my-key", "user_disconnected(500)");
 
     publisher.commitTransaction();
+    publisher.waitTransactionEnd();
 }
 
 int main(int argc, char* argv[])

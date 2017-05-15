@@ -3,6 +3,8 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <condition_variable>
 
 #include <amqpcpp.h>
 
@@ -16,6 +18,11 @@ namespace rabbitmq
 
 class Publisher : public Handler
 {
+private:
+    std::mutex m_transactionCommittedGuard;
+    std::condition_variable m_transactionCommittedCV;
+    volatile bool m_transactionCommitted = false;
+
 protected:
     void onSuccessStartTransactionCallback();
     void onErrorStartTransactionCallback(const char* msg);
@@ -31,6 +38,8 @@ public:
     Publisher(Publisher&& c) = default;
     Publisher& operator=(const Publisher& c) = delete;
     Publisher& operator=(Publisher&& c) = default;
+
+    void waitTransactionEnd();
 
     AMQP::Deferred& startTransaction();
     AMQP::Deferred& commitTransaction();

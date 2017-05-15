@@ -6,8 +6,8 @@
 
 namespace db
 {
-class AbstractLogic;
-typedef std::unique_ptr<AbstractLogic> LogicPtr;
+class Storage;
+typedef std::unique_ptr<Storage> StoragePtr;
 
 enum class Result : uint16_t
 {

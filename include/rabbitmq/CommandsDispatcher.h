@@ -10,7 +10,7 @@
 #include "../logger/LoggerFwd.h"
 #include "../logger/LoggerDefines.h"
 
-#include "../db/Fwd.h"
+#include "../app/Logic.h"
 
 #include "Fwd.h"
 #include "ProcessingItem.h"
@@ -25,7 +25,7 @@ private:
     static const MessageProcFuncsMap m_messageProcFuncsMap;
 
     logger::CategoryPtr m_logger;
-    db::LogicPtr m_logic;
+    app::Logic m_logic;
 
 private:
     template<class... Args>

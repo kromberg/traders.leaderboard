@@ -26,6 +26,8 @@ AMQP::Deferred& Publisher::commitTransaction()
     using namespace logger;
     using namespace std::placeholders;
 
+    m_transactionCommitted = false;
+
     return channel().commitTransaction()
         .onSuccess(std::bind(&Publisher::onSuccessCommitTransactionCallback, this))
         .onError(std::bind(&Publisher::onErrorCommitTransactionCallback, this, _1))
@@ -51,12 +53,29 @@ void Publisher::onErrorStartTransactionCallback(const char* msg)
 void Publisher::onSuccessCommitTransactionCallback()
 {
     LOG_DEBUG(m_logger, "Transaction was committed. All messages were published");
+
+    std::unique_lock<std::mutex> l(m_transactionCommittedGuard);
+    m_transactionCommitted = true;
+    m_transactionCommittedCV.notify_one();
 }
 
 void Publisher::onErrorCommitTransactionCallback(const char* msg)
 {
     LOG_ERROR(m_logger, "Error occurred while committing transaction. Description: %s",
         msg);
+
+    std::unique_lock<std::mutex> l(m_transactionCommittedGuard);
+    m_transactionCommitted = true;
+    m_transactionCommittedCV.notify_one();
+}
+
+void Publisher::waitTransactionEnd()
+{
+    std::unique_lock<std::mutex> l(m_transactionCommittedGuard);
+    while (!m_transactionCommitted)
+    {
+        m_transactionCommittedCV.wait(l);
+    }
 }
 
 } // namespace rabbitmq
