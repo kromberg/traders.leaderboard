@@ -9,6 +9,9 @@
 #include "../logger/LoggerFwd.h"
 
 #include "Fwd.h"
+#include "Utils.h"
+#include "EventLoop.h"
+#include "TcpHandler.h"
 
 namespace rabbitmq
 {
@@ -16,8 +19,13 @@ namespace rabbitmq
 class Handler
 {
 protected:
-    logger::CategoryPtr m_logger;
+    EventLoop& m_eventLoop;
+    TcpHandler m_handler;
+    std::shared_ptr<AMQP::TcpConnection> m_connection;
     std::shared_ptr<AMQP::TcpChannel> m_channel;
+    SynchObj m_channelReady;
+
+    logger::CategoryPtr m_logger;
 
 protected:
     virtual void onStartCallback(const std::string &Handlertag);
@@ -28,8 +36,7 @@ protected:
     virtual void onQueueSuccessCallback(const std::string &name, uint32_t messagecount, uint32_t Handlercount);
 
 public:
-    Handler(AMQP::TcpConnection* connection);
-    Handler(std::shared_ptr<AMQP::TcpChannel>& channel);
+    Handler(EventLoop& loop, const AMQP::Address &address) throw(std::runtime_error);
     virtual ~Handler() = default;
     Handler(const Handler& c) = delete;
     Handler(Handler&& c) = default;
@@ -37,6 +44,7 @@ public:
     Handler& operator=(Handler&& c) = default;
 
     AMQP::TcpChannel& channel();
+    void waitChannelReady();
 
     template<class... Args>
     AMQP::Deferred& declareExchange(Args... args);
@@ -55,29 +63,19 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // INLINE
 ////////////////////////////////////////////////////////////////////////////////
-inline Handler::Handler(AMQP::TcpConnection* connection):
-    m_channel(new AMQP::TcpChannel(connection))
+inline Handler::Handler(EventLoop& loop, const AMQP::Address &address) throw(std::runtime_error):
+    m_eventLoop(loop),
+    m_handler(m_eventLoop)
 {
     using namespace std::placeholders;
 
     m_logger = logger::Logger::getLogCategory("RMQ_HANDLER");
 
-    channel().onError(std::bind(&Handler::onErrorCallback, this, _1));
-    channel().onReady(std::bind(&Handler::onReadyCallback, this));
-}
+    // create a AMQP connection object
+    m_connection.reset(new AMQP::TcpConnection(&m_handler, address));
+    m_channel.reset(new AMQP::TcpChannel(m_connection.get()));
 
-inline Handler::Handler(std::shared_ptr<AMQP::TcpChannel>& _channel):
-    m_channel(_channel)
-{
-    using namespace std::placeholders;
-
-    if (!m_channel)
-    {
-        throw std::runtime_error("Cannot create Handler with empty channel");
-    }
-
-    m_logger = logger::Logger::getLogCategory("RMQ_HANDLER");
-
+    // set callbacks
     channel().onError(std::bind(&Handler::onErrorCallback, this, _1));
     channel().onReady(std::bind(&Handler::onReadyCallback, this));
 }
@@ -91,6 +89,7 @@ template<class... Args>
 inline AMQP::Deferred& Handler::declareExchange(Args... args)
 {
     using namespace logger;
+
     return channel().declareExchange(std::forward<Args>(args)...)
         .onSuccess(
             std::bind(
@@ -111,6 +110,7 @@ inline AMQP::Deferred& Handler::declareQueue(Args... args)
 {
     using namespace logger;
     using namespace std::placeholders;
+
     return channel().declareQueue(std::forward<Args>(args)...)
         .onSuccess(std::bind(&Handler::onQueueSuccessCallback, this, _1, _2, _3))
         .onFinalize(

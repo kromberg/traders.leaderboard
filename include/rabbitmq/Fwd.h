@@ -7,7 +7,10 @@ namespace rabbitmq
 {
 class EventLoop;
 class TcpHandler;
+class Handler;
+typedef std::shared_ptr<Handler> HandlerPtr;
 class Consumer;
+class Publisher;
 class Processor;
 typedef std::shared_ptr<Processor> ProcessorPtr;
 

@@ -35,7 +35,7 @@ public:
     virtual Result storeUserDeal(const uint64_t id, const std::time_t t, const int64_t amount) = 0;
 
     virtual Result getUser(User& user, const uint64_t id) const = 0;
-    virtual Result getLeaderboard(Leaderboard& lb, const uint64_t id, const uint64_t before, const uint64_t after) const = 0;
+    virtual Result getUserLeaderboard(Leaderboard& lb, const uint64_t id, const uint64_t before, const uint64_t after) const = 0;
     virtual Result getLeaderboard(Leaderboard& lb, const int64_t count) const = 0;
 };
 } // namespace db

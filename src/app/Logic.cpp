@@ -63,14 +63,15 @@ Result Logic::onUserConnected(const uint64_t id)
     {
         return Result::FAILED;
     }
+    LOG_DEBUG(m_logger, "User was connected <id: %lu>", id);
+
+    LOG_DEBUG(m_logger, "Got %zu items in leaderboard", lb.size());
 
     for (auto& scoreUser : lb)
     {
         LOG_DEBUG(m_logger, "%15ld -> <%lu, %s>",
             scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
     }
-
-    LOG_DEBUG(m_logger, "User was connected <id: %lu>", id);
 
     return Result::SUCCESS;
 }

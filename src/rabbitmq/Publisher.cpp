@@ -10,6 +10,10 @@ AMQP::Deferred& Publisher::startTransaction()
     using namespace logger;
     using namespace std::placeholders;
 
+    m_transactionMessagesCount = 0;
+
+    m_transactionStarted.reset();
+
     return channel().startTransaction()
         .onSuccess(std::bind(&Publisher::onSuccessStartTransactionCallback, this))
         .onError(std::bind(&Publisher::onErrorStartTransactionCallback, this, _1))
@@ -21,12 +25,17 @@ AMQP::Deferred& Publisher::startTransaction()
                 "Start Transaction operation was finalized"));
 }
 
+void Publisher::waitTransactionStarted()
+{
+    m_transactionStarted.wait();
+}
+
 AMQP::Deferred& Publisher::commitTransaction()
 {
     using namespace logger;
     using namespace std::placeholders;
 
-    m_transactionCommitted = false;
+    m_transactionCommitted.reset();
 
     return channel().commitTransaction()
         .onSuccess(std::bind(&Publisher::onSuccessCommitTransactionCallback, this))
@@ -39,43 +48,36 @@ AMQP::Deferred& Publisher::commitTransaction()
                 "Commit Transaction operation was finalized"));
 }
 
+
+void Publisher::waitTransactionCommitted()
+{
+    m_transactionCommitted.wait();
+}
+
 void Publisher::onSuccessStartTransactionCallback()
 {
     LOG_DEBUG(m_logger, "Transaction was started");
+    m_transactionStarted.set();
 }
 
 void Publisher::onErrorStartTransactionCallback(const char* msg)
 {
     LOG_ERROR(m_logger, "Error occurred while starting transaction. Description: %s",
         msg);
+    m_transactionStarted.set();
 }
 
 void Publisher::onSuccessCommitTransactionCallback()
 {
     LOG_DEBUG(m_logger, "Transaction was committed. All messages were published");
-
-    std::unique_lock<std::mutex> l(m_transactionCommittedGuard);
-    m_transactionCommitted = true;
-    m_transactionCommittedCV.notify_one();
+    m_transactionCommitted.set();
 }
 
 void Publisher::onErrorCommitTransactionCallback(const char* msg)
 {
     LOG_ERROR(m_logger, "Error occurred while committing transaction. Description: %s",
         msg);
-
-    std::unique_lock<std::mutex> l(m_transactionCommittedGuard);
-    m_transactionCommitted = true;
-    m_transactionCommittedCV.notify_one();
-}
-
-void Publisher::waitTransactionEnd()
-{
-    std::unique_lock<std::mutex> l(m_transactionCommittedGuard);
-    while (!m_transactionCommitted)
-    {
-        m_transactionCommittedCV.wait(l);
-    }
+    m_transactionCommitted.set();
 }
 
 } // namespace rabbitmq

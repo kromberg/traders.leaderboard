@@ -8,35 +8,27 @@
 #include <rabbitmq/Handler.h>
 #include <rabbitmq/Processor.h>
 
-void writeTestData(rabbitmq::Publisher& publisher)
+void writeTestData(rabbitmq::Publisher& publisher, const size_t trasnactionSize)
 {
     // start a transaction
     publisher.startTransaction();
-    for (size_t i = 1; i < 10000; ++i)
+    publisher.waitTransactionStarted();
+    for (size_t i = 0; i < 1000; ++i)
     {
         std::string idStr = std::to_string(i);
-        {
-            std::string message("user_registered(" + idStr + ",Abuda " + idStr + ")");
-            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
-        }
-        {
-            std::string message("user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
-            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
-        }
-        {
-            std::string message("user_deal_won(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
-            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
-        }
-        {
-            std::string message("user_deal(" + idStr + ",2017:05:10T10:10:10," + std::to_string(rand()) + ")");
-            publisher.publish("my-exchange", "my-key", strndup(message.data(), message.size()), message.size());
-        }
+        publisher.publish("my-exchange", "my-key", "user_registered(" + idStr + ",Abuda " + idStr + ")");
+        publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:16T10:10:10," + std::to_string(rand()) + ")");
+        publisher.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017:05:16T10:10:10," + std::to_string(rand()) + ")");
+        publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:16T10:10:10," + std::to_string(rand()) + ")");
+        publisher.publish("my-exchange", "my-key", "user_connected(" + idStr + ")");
 
-        if (i % 100 == 0)
+        if (publisher.transactionMessagesCount() >= trasnactionSize)
         {
             publisher.commitTransaction();
-            publisher.waitTransactionEnd();
+            publisher.waitTransactionCommitted();
+
             publisher.startTransaction();
+            publisher.waitTransactionStarted();
         }
     }
 
@@ -44,7 +36,7 @@ void writeTestData(rabbitmq::Publisher& publisher)
     //publisher.publish("my-exchange", "my-key", "user_disconnected(500)");
 
     publisher.commitTransaction();
-    publisher.waitTransactionEnd();
+    publisher.waitTransactionCommitted();
 }
 
 int main(int argc, char* argv[])
@@ -73,17 +65,8 @@ int main(int argc, char* argv[])
     rabbitmq::EventLoop eventLoop;
     eventLoop.start();
 
-    // create an instance of your own connection handler
-    rabbitmq::TcpHandler myHandler(eventLoop);
-
     // address of the server
     AMQP::Address address("amqp://guest:guest@localhost:5672/");
-
-    // create a AMQP connection object
-    AMQP::TcpConnection connection(&myHandler, address);
-
-    // and create a channel
-    std::shared_ptr<AMQP::TcpChannel> channel(new AMQP::TcpChannel(&connection));
 
     if (!generator)
     {
@@ -94,7 +77,7 @@ int main(int argc, char* argv[])
             return 3;
         }
 
-        rabbitmq::Consumer consumer(channel);
+        rabbitmq::Consumer consumer(eventLoop, address);
         consumer.attachProcessor(processor);
 
         // use the channel object to call the AMQP method you like
@@ -112,20 +95,29 @@ int main(int argc, char* argv[])
     }
     else
     {
-        rabbitmq::Publisher publisher(channel);
+        size_t transactionSize = 100;
+        if (argc >= 3)
+        {
+            transactionSize = std::stoul(argv[2]);
+        }
+
+        rabbitmq::Publisher publisher(eventLoop, address);
+
+        publisher.waitChannelReady();
 
         // use the channel object to call the AMQP method you like
         publisher.declareExchange("my-exchange", AMQP::fanout);
         publisher.declareQueue("my-queue");
         publisher.bindQueue("my-exchange", "my-queue", "my-routing-key");
 
-        writeTestData(publisher);
+        writeTestData(publisher, transactionSize);
+
+        sleep(100);
+
+        publisher.channel().close();
 
         sleep(20);
     }
-
-    connection.close();
-
 
     sleep(1);
 

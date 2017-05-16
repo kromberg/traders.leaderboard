@@ -120,7 +120,7 @@ Result InMemoryStorage::getUser(User& user, const uint64_t id) const
     return Result::SUCCESS;
 }
 
-Result InMemoryStorage::getLeaderboard(
+Result InMemoryStorage::getUserLeaderboard(
     Leaderboard& lb,
     const uint64_t id,
     const uint64_t before,
@@ -169,9 +169,7 @@ Result InMemoryStorage::getLeaderboard(
             }
         };
 
-        std::vector<UserScore> userScores;
-        userScores.reserve(count);
-        std::priority_queue<UserScore, std::vector<UserScore>, UserScoreComp> userScoresQueue(UserScoreComp(), userScores);
+        std::priority_queue<UserScore, std::vector<UserScore>, UserScoreComp> userScoresQueue;
 
         std::unique_lock<std::mutex> l(m_usersMapGuard);
         for (auto userIt = m_users.begin(); userIt != m_users.end(); ++ userIt)
@@ -192,12 +190,14 @@ Result InMemoryStorage::getLeaderboard(
         }
         l.unlock();
 
-        for (auto userScore : userScores)
+        while (!userScoresQueue.empty())
         {
+            const auto& userScore = userScoresQueue.top();
             lb.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(userScore.m_score),
                 std::forward_as_tuple(userScore.m_userIt->first, userScore.m_userIt->second.m_name));
+            userScoresQueue.pop();
         }
     }
 

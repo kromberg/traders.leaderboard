@@ -5,6 +5,11 @@
 namespace rabbitmq
 {
 
+void Handler::waitChannelReady()
+{
+    m_channelReady.wait();
+}
+
 void Handler::onStartCallback(const std::string &consumertag)
 {
     LOG_DEBUG(m_logger, "Consume operation started. Consumer tag: %s",
@@ -19,6 +24,7 @@ void Handler::onErrorCallback(const char *message)
 void Handler::onReadyCallback()
 {
     LOG_INFO(m_logger, "Channel is ready");
+    m_channelReady.set();
 }
 
 void Handler::onSuccessCallback(const logger::Level level, const char* logMessage)

@@ -54,7 +54,7 @@ public:
     virtual Result storeUserDeal(const uint64_t id, const std::time_t t, const int64_t amount) override;
 
     virtual Result getUser(User& user, const uint64_t id) const override;
-    virtual Result getLeaderboard(
+    virtual Result getUserLeaderboard(
         Leaderboard& lb,
         const uint64_t id,
         const uint64_t before = 10,

@@ -23,8 +23,7 @@ protected:
     void onMessageCallback(const AMQP::Message &message, uint64_t deliveryTag, bool redelivered);
 
 public:
-    Consumer(AMQP::TcpConnection* connection);
-    Consumer(std::shared_ptr<AMQP::TcpChannel>& channel);
+    Consumer(EventLoop& loop, const AMQP::Address &address);
     virtual ~Consumer() = default;
     Consumer(const Consumer& c) = delete;
     Consumer(Consumer&& c) = default;
@@ -41,14 +40,8 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // INLINE
 ////////////////////////////////////////////////////////////////////////////////
-inline Consumer::Consumer(AMQP::TcpConnection* connection):
-    Handler(connection)
-{
-    m_logger = logger::Logger::getLogCategory("RMQ_CONSUMER");
-}
-
-inline Consumer::Consumer(std::shared_ptr<AMQP::TcpChannel>& _channel):
-    Handler(_channel)
+inline Consumer::Consumer(EventLoop& loop, const AMQP::Address &address):
+    Handler(loop, address)
 {
     m_logger = logger::Logger::getLogCategory("RMQ_CONSUMER");
 }
@@ -63,6 +56,7 @@ inline AMQP::Deferred& Consumer::consume(Args... args)
 {
     using namespace logger;
     using namespace std::placeholders;
+
     return channel().consume(std::forward<Args>(args)...)
         .onReceived(std::bind(&Consumer::onMessageCallback, this, _1, _2, _3))
         .onSuccess(std::bind(&Consumer::onStartCallback, this, _1))

@@ -3,6 +3,7 @@
 
 #include <queue>
 #include <vector>
+#include <unordered_set>
 #include <thread>
 #include <mutex>
 
@@ -11,6 +12,8 @@
 #include <amqpcpp.h>
 
 #include "../logger/LoggerFwd.h"
+
+#include "Fwd.h"
 
 namespace rabbitmq
 {
@@ -41,8 +44,15 @@ private:
 
     volatile bool m_isRunning = false;
 
+    std::unordered_set<Handler*> m_handlers;
+    std::mutex m_handlersGuard;
+
 private:
     void func();
+    void processConnectionItem(ConnectionItem& item);
+    void add(ConnectionItem& item);
+    void update(const ConnectionItem& item, std::vector<pollfd>::iterator it);
+    void remove(const ConnectionItem& item);
 
 public:
     EventLoop();
@@ -50,6 +60,9 @@ public:
 
     void start();
     void stop();
+
+    void registerHandler(Handler* handler);
+    void unregisterHandler(Handler* handler);
 
     template<class... Args>
     void addConnectionItem(Args... args);
