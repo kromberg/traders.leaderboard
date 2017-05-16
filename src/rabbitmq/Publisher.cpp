@@ -25,8 +25,9 @@ AMQP::Deferred& Publisher::startTransaction()
                 "Start Transaction operation was finalized"));
 }
 
-void Publisher::waitTransactionStarted()
+void Publisher::startTransactionSync()
 {
+    startTransaction();
     m_transactionStarted.wait();
 }
 
@@ -38,7 +39,7 @@ AMQP::Deferred& Publisher::commitTransaction()
     m_transactionCommitted.reset();
 
     return channel().commitTransaction()
-        .onSuccess(std::bind(&Publisher::onSuccessCommitTransactionCallback, this))
+        .onSuccess(std::bind(&Publisher::onSuccessCommitTransactionCallback, this, m_transactionMessagesCount))
         .onError(std::bind(&Publisher::onErrorCommitTransactionCallback, this, _1))
         .onFinalize(
             std::bind(
@@ -48,9 +49,9 @@ AMQP::Deferred& Publisher::commitTransaction()
                 "Commit Transaction operation was finalized"));
 }
 
-
-void Publisher::waitTransactionCommitted()
+void Publisher::commitTransactionSync()
 {
+    commitTransaction();
     m_transactionCommitted.wait();
 }
 
@@ -67,9 +68,10 @@ void Publisher::onErrorStartTransactionCallback(const char* msg)
     m_transactionStarted.set();
 }
 
-void Publisher::onSuccessCommitTransactionCallback()
+void Publisher::onSuccessCommitTransactionCallback(const size_t transactionMessagesCount)
 {
-    LOG_DEBUG(m_logger, "Transaction was committed. All messages were published");
+    LOG_DEBUG(m_logger, "Transaction was committed. %zu messages were published",
+        transactionMessagesCount);
     m_transactionCommitted.set();
 }
 

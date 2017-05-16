@@ -20,7 +20,7 @@ struct User
 };
 
 // score to user
-typedef std::multimap<int64_t, User> Leaderboard;
+typedef std::multimap<int64_t, User, std::greater<int64_t> > Leaderboard;
 
 class Storage
 {

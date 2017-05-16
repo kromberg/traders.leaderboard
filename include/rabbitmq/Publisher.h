@@ -28,7 +28,7 @@ protected:
     void onSuccessStartTransactionCallback();
     void onErrorStartTransactionCallback(const char* msg);
 
-    void onSuccessCommitTransactionCallback();
+    void onSuccessCommitTransactionCallback(const size_t transactionMessagesCount);
     void onErrorCommitTransactionCallback(const char* msg);
 
 public:
@@ -42,8 +42,8 @@ public:
     AMQP::Deferred& startTransaction();
     AMQP::Deferred& commitTransaction();
 
-    void waitTransactionStarted();
-    void waitTransactionCommitted();
+    void startTransactionSync();
+    void commitTransactionSync();
 
     size_t transactionMessagesCount() const;
 

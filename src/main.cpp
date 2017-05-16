@@ -1,4 +1,6 @@
 #include <unistd.h>
+#include <random>
+
 #include <logger/Logger.h>
 #include <logger/LoggerDefines.h>
 #include <rabbitmq/EventLoop.h>
@@ -8,35 +10,50 @@
 #include <rabbitmq/Handler.h>
 #include <rabbitmq/Processor.h>
 
-void writeTestData(rabbitmq::Publisher& publisher, const size_t trasnactionSize)
+void writeTestData(
+    rabbitmq::Publisher& publisher,
+    const size_t countUsers,
+    const size_t dealsPerUser,
+    const size_t trasnactionSize)
 {
+    logger::CategoryPtr logger = logger::Logger::getLogCategory("TEST_DATA_WRITER");
+
+    std::default_random_engine generator;
+    std::uniform_int_distribution<int16_t> distribution(
+        std::numeric_limits<int16_t>::min(),
+        std::numeric_limits<int16_t>::max());
+
     // start a transaction
-    publisher.startTransaction();
-    publisher.waitTransactionStarted();
-    for (size_t i = 0; i < 1000; ++i)
+    publisher.startTransactionSync();
+    for (size_t i = 0; i < countUsers; ++i)
     {
+
         std::string idStr = std::to_string(i);
         publisher.publish("my-exchange", "my-key", "user_registered(" + idStr + ",Abuda " + idStr + ")");
-        publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:16T10:10:10," + std::to_string(rand()) + ")");
-        publisher.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017:05:16T10:10:10," + std::to_string(rand()) + ")");
-        publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:16T10:10:10," + std::to_string(rand()) + ")");
+
+        for (size_t deal = 0; deal < dealsPerUser; ++ deal)
+        {
+            publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017:05:16T10:10:10," + std::to_string(distribution(generator)) + ")");
+            publisher.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017:05:16T10:10:10," + std::to_string(distribution(generator)) + ")");
+        }
         publisher.publish("my-exchange", "my-key", "user_connected(" + idStr + ")");
 
         if (publisher.transactionMessagesCount() >= trasnactionSize)
         {
-            publisher.commitTransaction();
-            publisher.waitTransactionCommitted();
+            publisher.commitTransactionSync();
 
-            publisher.startTransaction();
-            publisher.waitTransactionStarted();
+            LOG_DEBUG(logger, "%zu users were processed", i);
+
+            publisher.startTransactionSync();
         }
     }
 
     //publisher.publish("my-exchange", "my-key", "user_connected(10)");
     //publisher.publish("my-exchange", "my-key", "user_disconnected(500)");
 
-    publisher.commitTransaction();
-    publisher.waitTransactionCommitted();
+    publisher.commitTransactionSync();
+
+    LOG_INFO(logger, "%zu users were processed", countUsers);
 }
 
 int main(int argc, char* argv[])
@@ -87,18 +104,27 @@ int main(int argc, char* argv[])
 
         consumer.consume("my-queue");
 
-        //writeTestData(channel);
-
         sleep(50);
 
         processor->stop();
     }
     else
     {
+        size_t countUsers = 1000;
+        size_t dealsPerUser = 10;
         size_t transactionSize = 100;
+
         if (argc >= 3)
         {
-            transactionSize = std::stoul(argv[2]);
+            countUsers = std::stoul(argv[2]);
+        }
+        if (argc >= 4)
+        {
+            dealsPerUser = std::stoul(argv[3]);
+        }
+        if (argc >= 5)
+        {
+            transactionSize = std::stoul(argv[4]);
         }
 
         rabbitmq::Publisher publisher(eventLoop, address);
@@ -110,13 +136,11 @@ int main(int argc, char* argv[])
         publisher.declareQueue("my-queue");
         publisher.bindQueue("my-exchange", "my-queue", "my-routing-key");
 
-        writeTestData(publisher, transactionSize);
-
-        sleep(100);
+        writeTestData(publisher, countUsers, dealsPerUser, transactionSize);
 
         publisher.channel().close();
 
-        sleep(20);
+        sleep(5);
     }
 
     sleep(1);
