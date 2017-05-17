@@ -1,5 +1,5 @@
-#ifndef DB_IN_MEMORY_STORAGE_H
-#define DB_IN_MEMORY_STORAGE_H
+#ifndef DB_MONGO_STORAGE_H
+#define DB_MONGO_STORAGE_H
 
 #include <ctime>
 #include <mutex>
@@ -8,39 +8,26 @@
 #include <unordered_set>
 #include <string>
 
+#include <mongocxx/client.hpp>
+
 #include "../logger/LoggerFwd.h"
 
 #include "Storage.h"
 
 namespace db
 {
-class InMemoryStorage : public Storage
+class MongodbStorage : public Storage
 {
 private:
-    struct UserStorage
-    {
-        std::string m_name;
-
-        typedef std::time_t Time;
-        typedef int64_t Score;
-        typedef std::map<Time, Score> Scores;
-        Scores m_scores;
-
-        UserStorage(const std::string& name):
-            m_name(name)
-        {}
-
-        int64_t getWeekScores(const Time currentTime) const;
-    };
-    typedef std::unordered_map<int64_t, UserStorage> UsersStorage;
-    UsersStorage m_users;
-    mutable std::mutex m_usersMapGuard;
+    mongocxx::client m_client;
+    mongocxx::database m_db;
+    mongocxx::collection m_collection;
 
     logger::CategoryPtr m_logger;
 
 public:
-    InMemoryStorage();
-    virtual ~InMemoryStorage() = default;
+    MongodbStorage();
+    virtual ~MongodbStorage() = default;
 
     virtual Result storeUser(const int64_t id, const std::string& name) override;
     virtual Result renameUser(const int64_t id, const std::string& name) override;
@@ -60,4 +47,4 @@ public:
 };
 } // namespace db
 
-#endif // DB_IN_MEMORY_STORAGE_H
+#endif // DB_MONGO_STORAGE_H

@@ -15,6 +15,7 @@ enum class Result : uint16_t
     FAILED,
     USER_ALREADY_REG,
     USER_NOT_FOUND,
+    OPERATION_ERROR,
 };
 
 const char* resultToStr(const Result r);

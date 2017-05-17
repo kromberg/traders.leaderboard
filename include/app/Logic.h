@@ -23,17 +23,17 @@ public:
     virtual ~Logic();
 
     // user_registered(id,name)
-    virtual Result onUserRegistered(const uint64_t id, const std::string& name);
+    virtual Result onUserRegistered(const int64_t id, const std::string& name);
     // user_renamed(id,name)
-    virtual Result onUserRenamed(const uint64_t id, const std::string& name);
+    virtual Result onUserRenamed(const int64_t id, const std::string& name);
     // user_deal(id,time,amount)
-    virtual Result onUserDeal(const uint64_t id, const std::time_t t, const int64_t amount);
+    virtual Result onUserDeal(const int64_t id, const std::time_t t, const int64_t amount);
     // user_deal_won(id,time,amount)
-    virtual Result onUserDealWon(const uint64_t id, const std::time_t t, const int64_t amount);
+    virtual Result onUserDealWon(const int64_t id, const std::time_t t, const int64_t amount);
     // user_connected(id)
-    virtual Result onUserConnected(const uint64_t id);
+    virtual Result onUserConnected(const int64_t id);
     // user_disconnected(id)
-    virtual Result onUserDisconnected(const uint64_t id);
+    virtual Result onUserDisconnected(const int64_t id);
 };
 } // namespace app
 

@@ -14,6 +14,8 @@ const char* resultToStr(const Result r)
             return "USER ALREADY REGISTERED";
         case Result::USER_NOT_FOUND:
             return "USER NOT FOUND";
+        case Result::OPERATION_ERROR:
+            return "OPERATION ERROR";
     }
     return "UNKNOWN";
 }

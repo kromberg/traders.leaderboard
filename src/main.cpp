@@ -25,9 +25,9 @@ void writeTestData(
 
     // start a transaction
     publisher.startTransactionSync();
+
     for (size_t i = 0; i < countUsers; ++i)
     {
-
         std::string idStr = std::to_string(i);
         publisher.publish("my-exchange", "my-key", "user_registered(" + idStr + ",Abuda " + idStr + ")");
 

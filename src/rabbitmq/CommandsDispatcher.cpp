@@ -31,15 +31,15 @@ Result Dispatcher::processUserRegistered(Dispatcher& dispatcher, const std::stri
 // user_registered(id,name)
 Result Dispatcher::onUserRegistered(const std::string& command, ProcessingItem&& item)
 {
-    uint64_t id;
+    int64_t id;
     std::unique_ptr<char[]> buf(new char[item.m_args.size()]);
-    Result r = getArguments(command, item.m_args, "(%lu,%[^)]", std::ref(id), buf.get());
+    Result r = getArguments(command, item.m_args, "(%ld,%[^)]", std::ref(id), buf.get());
     if (Result::SUCCESS != r)
     {
         return r;
     }
 
-    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu, name: %s>",
+    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %ld, name: %s>",
         command.c_str(), id, buf.get());
 
     app::Result appRes = m_logic.onUserRegistered(id, buf.get());
@@ -60,15 +60,15 @@ Result Dispatcher::processUserRenamed(Dispatcher& dispatcher, const std::string&
 // user_renamed(id,name)
 Result Dispatcher::onUserRenamed(const std::string& command, ProcessingItem&& item)
 {
-    uint64_t id;
+    int64_t id;
     std::unique_ptr<char[]> buf(new char[item.m_args.size()]);
-    Result r = getArguments(command, item.m_args, "(%lu,%[^)]", std::ref(id), buf.get());
+    Result r = getArguments(command, item.m_args, "(%ld,%[^)]", std::ref(id), buf.get());
     if (Result::SUCCESS != r)
     {
         return r;
     }
 
-    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu, name: %s>",
+    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %ld, name: %s>",
         command.c_str(), id, buf.get());
 
     app::Result appRes = m_logic.onUserRenamed(id, buf.get());
@@ -89,10 +89,10 @@ Result Dispatcher::processUserDeal(Dispatcher& dispatcher, const std::string& co
 // user_deal(id,time,amount)
 Result Dispatcher::onUserDeal(const std::string& command, ProcessingItem&& item)
 {
-    uint64_t id;
+    int64_t id;
     std::unique_ptr<char[]> timeBuf(new char[item.m_args.size()]);
     int64_t amount;
-    Result r = getArguments(command, item.m_args, "(%lu,%[^','],%ld)", std::ref(id), timeBuf.get(), std::ref(amount));
+    Result r = getArguments(command, item.m_args, "(%ld,%[^','],%ld)", std::ref(id), timeBuf.get(), std::ref(amount));
     if (Result::SUCCESS != r)
     {
         return r;
@@ -120,10 +120,10 @@ Result Dispatcher::processUserDealWon(Dispatcher& dispatcher, const std::string&
 // user_deal_won(id,time,amount)
 Result Dispatcher::onUserDealWon(const std::string& command, ProcessingItem&& item)
 {
-    uint64_t id;
+    int64_t id;
     std::unique_ptr<char[]> timeBuf(new char[item.m_args.size()]);
     int64_t amount;
-    Result r = getArguments(command, item.m_args, "(%lu,%[^','],%ld)", std::ref(id), timeBuf.get(), std::ref(amount));
+    Result r = getArguments(command, item.m_args, "(%ld,%[^','],%ld)", std::ref(id), timeBuf.get(), std::ref(amount));
     if (Result::SUCCESS != r)
     {
         return r;
@@ -152,14 +152,14 @@ Result Dispatcher::processUserConnected(Dispatcher& dispatcher, const std::strin
 // user_connected(id)
 Result Dispatcher::onUserConnected(const std::string& command, ProcessingItem&& item)
 {
-    uint64_t id;
-    Result r = getArguments(command, item.m_args, "(%lu)", std::ref(id));
+    int64_t id;
+    Result r = getArguments(command, item.m_args, "(%ld)", std::ref(id));
     if (Result::SUCCESS != r)
     {
         return r;
     }
 
-    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu>", command.c_str(), id);
+    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %ld>", command.c_str(), id);
 
     app::Result appRes = m_logic.onUserConnected(id);
     if (app::Result::SUCCESS != appRes)
@@ -179,14 +179,14 @@ Result Dispatcher::processUserDisconnected(Dispatcher& dispatcher, const std::st
 // user_disconnected(id)
 Result Dispatcher::onUserDisconnected(const std::string& command, ProcessingItem&& item)
 {
-    uint64_t id;
-    Result r = getArguments(command, item.m_args, "(%lu)", std::ref(id));
+    int64_t id;
+    Result r = getArguments(command, item.m_args, "(%ld)", std::ref(id));
     if (Result::SUCCESS != r)
     {
         return r;
     }
 
-    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %lu>", command.c_str(), id);
+    LOG_DEBUG(m_logger, "'%s' command arguments: <id: %ld>", command.c_str(), id);
 
     app::Result appRes = m_logic.onUserDisconnected(id);
     if (app::Result::SUCCESS != appRes)

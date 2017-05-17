@@ -28,7 +28,7 @@ InMemoryStorage::InMemoryStorage()
     m_logger = logger::Logger::getLogCategory("DB_IN_MEM");
 }
 
-Result InMemoryStorage::storeUser(const uint64_t id, const std::string& name)
+Result InMemoryStorage::storeUser(const int64_t id, const std::string& name)
 {
     std::unique_lock<std::mutex> l(m_usersMapGuard);
     auto it = m_users.find(id);
@@ -37,13 +37,13 @@ Result InMemoryStorage::storeUser(const uint64_t id, const std::string& name)
         if (it->second.m_name == name)
         {
             l.unlock();
-            LOG_ERROR(m_logger, "Cannot register user with the same name <id: %lu, name: %s>",
+            LOG_ERROR(m_logger, "Cannot register user with the same name <id: %ld, name: %s>",
                 id, name.c_str());
             return Result::USER_ALREADY_REG;
         }
         else
         {
-            LOG_ERROR(m_logger, "Cannot register user with different names <id: %lu, name: %s, new name: %s>",
+            LOG_ERROR(m_logger, "Cannot register user with different names <id: %ld, name: %s, new name: %s>",
                 id, it->second.m_name.c_str(), name.c_str());
             l.unlock();
             return Result::USER_ALREADY_REG;
@@ -51,39 +51,39 @@ Result InMemoryStorage::storeUser(const uint64_t id, const std::string& name)
     }
     m_users.insert(std::make_pair(id, name));
     l.unlock();
-    LOG_DEBUG(m_logger, "User was registered <id: %lu, name: %s>",
+    LOG_DEBUG(m_logger, "User was registered <id: %ld, name: %s>",
         id, name.c_str());
     return Result::SUCCESS;
 }
 
-Result InMemoryStorage::renameUser(const uint64_t id, const std::string& name)
+Result InMemoryStorage::renameUser(const int64_t id, const std::string& name)
 {
     std::unique_lock<std::mutex> l(m_usersMapGuard);
     auto it = m_users.find(id);
     if (m_users.end() == it)
     {
         l.unlock();
-        LOG_ERROR(m_logger, "Cannot rename user <id: %lu, name: %s>. It is not found",
+        LOG_ERROR(m_logger, "Cannot rename user <id: %ld, name: %s>. User is not found",
             id, name.c_str());
         return Result::USER_NOT_FOUND;
     }
 
     it->second.m_name = name;
     l.unlock();
-    LOG_DEBUG(m_logger, "User was renamed <id: %lu new name: %s>",
+    LOG_DEBUG(m_logger, "User was renamed <id: %ld new name: %s>",
         id, name.c_str());
     return Result::SUCCESS;
 }
 
-Result InMemoryStorage::storeUserDeal(const uint64_t id, const std::time_t t, const int64_t amount)
+Result InMemoryStorage::storeUserDeal(const int64_t id, const std::time_t t, const int64_t amount)
 {
     std::unique_lock<std::mutex> l(m_usersMapGuard);
     auto it = m_users.find(id);
     if (m_users.end() == it)
     {
         l.unlock();
-        LOG_ERROR(m_logger, "Cannot store user deal <id: %lu, time: %lu, amount: %ld>. User is not found",
-            id, static_cast<uint64_t>(t), amount);
+        LOG_ERROR(m_logger, "Cannot store user deal <id: %ld, time: %s, amount: %ld>. User is not found",
+            id, ctime(&t), amount);
         return Result::USER_NOT_FOUND;
     }
 
@@ -98,20 +98,20 @@ Result InMemoryStorage::storeUserDeal(const uint64_t id, const std::time_t t, co
     }
     l.unlock();
 
-    LOG_DEBUG(m_logger, "User deal was stored <id: %lu, time: %lu, amount: %ld>",
-        id, static_cast<uint64_t>(t), amount);
+    LOG_DEBUG(m_logger, "User deal was stored <id: %ld, time: %s, amount: %ld>",
+        id, ctime(&t), amount);
 
     return Result::SUCCESS;
 }
 
-Result InMemoryStorage::getUser(User& user, const uint64_t id) const
+Result InMemoryStorage::getUser(User& user, const int64_t id) const
 {
     std::unique_lock<std::mutex> l(m_usersMapGuard);
     auto it = m_users.find(id);
     if (m_users.end() == it)
     {
         l.unlock();
-        LOG_ERROR(m_logger, "Cannot find user <id: %lu>", id);
+        LOG_ERROR(m_logger, "Cannot find user <id: %ld>", id);
         return Result::USER_NOT_FOUND;
     }
 
@@ -122,7 +122,7 @@ Result InMemoryStorage::getUser(User& user, const uint64_t id) const
 
 Result InMemoryStorage::getUserLeaderboard(
     Leaderboard& lb,
-    const uint64_t id,
+    const int64_t id,
     const uint64_t before,
     const uint64_t after)
         const
