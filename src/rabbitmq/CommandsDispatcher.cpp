@@ -1,5 +1,6 @@
 #include <memory>
 
+#include <common/Utils.h>
 #include <rabbitmq/CommandsDispatcher.h>
 
 namespace rabbitmq
@@ -98,9 +99,7 @@ Result Dispatcher::onUserDeal(const std::string& command, ProcessingItem&& item)
         return r;
     }
 
-    struct tm timeStruct;
-    strptime(timeBuf.get(), "%Y:%m:%dT%H:%M:%S", &timeStruct);
-    time_t t = mktime(&timeStruct);
+    time_t t = common::timeFromString(timeBuf.get());
 
     app::Result appRes = m_logic.onUserDeal(id, t, amount);
     if (app::Result::SUCCESS != appRes)
@@ -129,9 +128,7 @@ Result Dispatcher::onUserDealWon(const std::string& command, ProcessingItem&& it
         return r;
     }
 
-    struct tm timeStruct;
-    strptime(timeBuf.get(), "%Y:%m:%dT%H:%M:%S", &timeStruct);
-    time_t t = mktime(&timeStruct);
+    time_t t = common::timeFromString(timeBuf.get());
 
     app::Result appRes = m_logic.onUserDealWon(id, t, amount);
     if (app::Result::SUCCESS != appRes)

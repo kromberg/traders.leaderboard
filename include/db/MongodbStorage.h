@@ -21,7 +21,7 @@ class MongodbStorage : public Storage
 private:
     mongocxx::client m_client;
     mongocxx::database m_db;
-    mongocxx::collection m_collection;
+    mutable mongocxx::collection m_collection;
 
     logger::CategoryPtr m_logger;
 

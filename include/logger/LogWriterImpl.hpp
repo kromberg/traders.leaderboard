@@ -5,6 +5,7 @@
 #include <ctime>
 #include <chrono>
 
+#include "../common/Utils.h"
 #include "Logger.h"
 #include "Category.h"
 
@@ -45,12 +46,6 @@ inline bool LogWriter::initialize()
 inline void LogWriter::deinitialize()
 {}
 
-inline void LogWriter::currentTimeToBuf(char* const buf, const size_t size)
-{
-    std::time_t t = std::time(nullptr);
-    std::strftime(buf, size, "%Y%m%dT%H:%M:%S", std::gmtime(&t));
-}
-
 template<class... Args>
 inline void LogWriter::write(
     const Level level,
@@ -58,7 +53,7 @@ inline void LogWriter::write(
     Args ... args)
 {
     static thread_local char timeBuf[100];
-    currentTimeToBuf(timeBuf, sizeof(timeBuf));
+    common::timeToBuf(timeBuf, sizeof(timeBuf), std::time(nullptr));
     fprintf(m_file, ("%s %-7s " + fmt + "\n").c_str(), timeBuf, levelToStr(level), std::forward<Args>(args)...);
 }
 

@@ -25,8 +25,6 @@ private:
     std::string m_filename;
     FILE* m_file;
 
-    static void currentTimeToBuf(char* const buf, const size_t size);
-
     template<class... Args>
     void write(const Level level, const std::string& fmt, Args ... args);
 
