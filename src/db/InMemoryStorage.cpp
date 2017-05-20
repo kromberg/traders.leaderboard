@@ -1,6 +1,3 @@
-#include <queue>
-
-
 #include <logger/LoggerDefines.h>
 #include <db/InMemoryStorage.h>
 
@@ -120,18 +117,6 @@ Result InMemoryStorage::getUser(User& user, const int64_t id) const
     return Result::SUCCESS;
 }
 
-Result InMemoryStorage::getUserLeaderboard(
-    Leaderboard& lb,
-    const int64_t id,
-    const uint64_t before,
-    const uint64_t after)
-        const
-{
-    
-
-    return Result::SUCCESS;
-}
-
 Result InMemoryStorage::getLeaderboard(
     Leaderboard& lb,
     const int64_t count)
@@ -153,23 +138,7 @@ Result InMemoryStorage::getLeaderboard(
     }
     else
     {
-        struct UserScore
-        {
-            int64_t m_score;
-            UsersStorage::const_iterator m_userIt;
-            UserScore(const int64_t score, UsersStorage::const_iterator userIt):
-                m_score(score), m_userIt(userIt)
-            {}
-        };
-        struct UserScoreComp
-        {
-            bool operator() (const UserScore& lhs, const UserScore& rhs)
-            {
-                return lhs.m_score > rhs.m_score;
-            }
-        };
-
-        std::priority_queue<UserScore, std::vector<UserScore>, UserScoreComp> userScoresQueue;
+        UserScoreQueue userScoresQueue;
 
         std::unique_lock<std::mutex> l(m_usersMapGuard);
         for (auto userIt = m_users.begin(); userIt != m_users.end(); ++ userIt)
@@ -204,5 +173,165 @@ Result InMemoryStorage::getLeaderboard(
     return Result::SUCCESS;
 }
 
+Result InMemoryStorage::getUsersLeaderboards(
+    UserLeaderboards& leaderboards,
+    const std::unordered_set<int64_t>& ids,
+    const uint64_t before,
+    const uint64_t after)
+        const
+{
+    if (ids.empty())
+    {
+        return Result::SUCCESS;
+    }
+
+    time_t currentTime = time(nullptr);
+ 
+    Leaderboard tmpLeaderboard;
+    {
+        std::unique_lock<std::mutex> l(m_usersMapGuard);
+        for (const auto& user : m_users)
+        {
+            tmpLeaderboard.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(user.second.getWeekScores(currentTime)),
+                std::forward_as_tuple(user.first, user.second.m_name));
+        }
+    }
+
+    Leaderboard currentLeaderboard;
+    std::unordered_map<int64_t, uint16_t> currentIdsToCount;
+    for (auto&& lbItem : tmpLeaderboard)
+    {
+        currentLeaderboard.emplace(lbItem);
+
+        auto currentIdIt = currentIdsToCount.begin();
+        while (currentIdIt != currentIdsToCount.end())
+        {
+            auto lbIt = leaderboards.find(currentIdIt->first);
+            if (leaderboards.end() == lbIt)
+            {
+                LOG_ERROR(m_logger, "Cannot find leaderborad for user %ld", lbIt->first);
+                ++ currentIdIt;
+                continue;
+            }
+            lbIt->second.emplace(lbItem);
+
+            if (currentIdIt->second + 1 >= after)
+            {
+                currentIdIt = currentIdsToCount.erase(currentIdIt);
+            }
+            else
+            {
+                ++ currentIdIt->second;
+                ++ currentIdIt;
+            }
+        }
+
+        auto idIt = ids.find(lbItem.second.m_id);
+        if (ids.end() != idIt)
+        {
+            LOG_DEBUG(m_logger, "User %ld found: adding leaderborad", *idIt);
+            currentIdsToCount.emplace(*idIt, 0);
+            leaderboards.emplace(*idIt, currentLeaderboard);
+        }
+
+        if (currentLeaderboard.size() > before)
+        {
+            currentLeaderboard.erase(currentLeaderboard.begin());
+        }
+    }
+
+    return Result::SUCCESS;
+}
+
+Result InMemoryStorage::getLeaderboards(
+    Leaderboards& leaderboards,
+    const std::unordered_set<int64_t>& ids,
+    const int64_t count,
+    const uint64_t before,
+    const uint64_t after)
+        const
+{
+    time_t currentTime = time(nullptr);
+
+    Leaderboard tmpLeaderboard;
+    {
+        std::unique_lock<std::mutex> l(m_usersMapGuard);
+        for (const auto& user : m_users)
+        {
+            tmpLeaderboard.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(user.second.getWeekScores(currentTime)),
+                std::forward_as_tuple(user.first, user.second.m_name));
+        }
+    }
+
+    if (count <= 0)
+    {
+        leaderboards.emplace(-1, std::move(tmpLeaderboard));
+    }
+    else
+    {
+        auto begin = tmpLeaderboard.begin();
+        auto end = tmpLeaderboard.begin();
+        std::advance(end, std::min(static_cast<int64_t>(tmpLeaderboard.size()), count));
+
+        leaderboards.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(-1),
+            std::forward_as_tuple(begin, end));
+    }
+
+    if (ids.empty())
+    {
+        return Result::SUCCESS;
+    }
+
+    Leaderboard currentLeaderboard;
+    std::unordered_map<int64_t, uint16_t> currentIdsToCount;
+    for (auto&& lbItem : tmpLeaderboard)
+    {
+        currentLeaderboard.emplace(lbItem);
+
+        auto currentIdIt = currentIdsToCount.begin();
+        while (currentIdIt != currentIdsToCount.end())
+        {
+            auto lbIt = leaderboards.find(currentIdIt->first);
+            if (leaderboards.end() == lbIt)
+            {
+                LOG_ERROR(m_logger, "Cannot find leaderborad for user %ld", lbIt->first);
+                ++ currentIdIt;
+                continue;
+            }
+            lbIt->second.emplace(lbItem);
+
+            if (currentIdIt->second + 1 >= after)
+            {
+                currentIdIt = currentIdsToCount.erase(currentIdIt);
+            }
+            else
+            {
+                ++ currentIdIt->second;
+                ++ currentIdIt;
+            }
+        }
+
+        auto idIt = ids.find(lbItem.second.m_id);
+        if (ids.end() != idIt)
+        {
+            LOG_DEBUG(m_logger, "User %ld found: adding leaderborad", *idIt);
+            currentIdsToCount.emplace(*idIt, 0);
+            leaderboards.emplace(*idIt, currentLeaderboard);
+        }
+
+        if (currentLeaderboard.size() > before)
+        {
+            currentLeaderboard.erase(currentLeaderboard.begin());
+        }
+    }
+
+    return Result::SUCCESS;
+}
 
 } // namespace db

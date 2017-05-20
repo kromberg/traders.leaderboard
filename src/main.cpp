@@ -33,8 +33,8 @@ void writeTestData(
 
         for (size_t deal = 0; deal < dealsPerUser; ++ deal)
         {
-            publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017-05-10T10:10:10," + std::to_string(distribution(generator)) + ")");
-            publisher.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017-05-10T10:10:10," + std::to_string(distribution(generator)) + ")");
+            publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")");
+            publisher.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")");
         }
         publisher.publish("my-exchange", "my-key", "user_connected(" + idStr + ")");
 

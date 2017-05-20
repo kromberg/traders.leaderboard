@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
+#include <queue>
 
 #include "../logger/LoggerFwd.h"
 
@@ -16,6 +17,7 @@ namespace db
 {
 class InMemoryStorage : public Storage
 {
+
 private:
     struct UserStorage
     {
@@ -33,6 +35,26 @@ private:
         int64_t getWeekScores(const Time currentTime) const;
     };
     typedef std::unordered_map<int64_t, UserStorage> UsersStorage;
+
+private:
+    struct UserScore
+    {
+        int64_t m_score;
+        UsersStorage::const_iterator m_userIt;
+        UserScore(const int64_t score, UsersStorage::const_iterator userIt):
+            m_score(score), m_userIt(userIt)
+        {}
+    };
+    struct UserScoreComp
+    {
+        bool operator() (const UserScore& lhs, const UserScore& rhs)
+        {
+            return lhs.m_score > rhs.m_score;
+        }
+    };
+    typedef std::priority_queue<UserScore, std::vector<UserScore>, UserScoreComp> UserScoreQueue;
+
+private:
     UsersStorage m_users;
     mutable std::mutex m_usersMapGuard;
 
@@ -47,15 +69,22 @@ public:
     virtual Result storeUserDeal(const int64_t id, const std::time_t t, const int64_t amount) override;
 
     virtual Result getUser(User& user, const int64_t id) const override;
-    virtual Result getUserLeaderboard(
+    virtual Result getLeaderboard(
         Leaderboard& lb,
-        const int64_t id,
+        const int64_t count = -1)
+            const override;
+    virtual Result getUsersLeaderboards(
+        UserLeaderboards& lb,
+        const std::unordered_set<int64_t>& ids,
         const uint64_t before = 10,
         const uint64_t after = 10)
             const override;
-    virtual Result getLeaderboard(
-        Leaderboard& lb,
-        const int64_t count)
+    virtual Result getLeaderboards(
+        Leaderboards& leaderboards,
+        const std::unordered_set<int64_t>& ids,
+        const int64_t count = -1,
+        const uint64_t before = 10,
+        const uint64_t after = 10)
             const override;
 };
 } // namespace db

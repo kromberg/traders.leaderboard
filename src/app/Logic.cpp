@@ -58,20 +58,39 @@ Result Logic::onUserDealWon(const int64_t id, const std::time_t t, const int64_t
 // user_connected(id)
 Result Logic::onUserConnected(const int64_t id)
 {
-    db::Leaderboard lb;
-    db::Result res = m_storage->getLeaderboard(lb, 10);
-    if (db::Result::SUCCESS != res)
     {
-        return Result::FAILED;
-    }
-    LOG_DEBUG(m_logger, "User was connected <id: %ld>", id);
+        std::unique_lock<std::mutex> l(m_connectedUsersGuard);
+        m_connectedUsers.emplace(id);
+        LOG_DEBUG(m_logger, "User was connected <id: %ld>", id);
 
-    LOG_DEBUG(m_logger, "Got %zu items in leaderboard", lb.size());
+        db::UserLeaderboards leaderboards;
+        db::Result res = m_storage->getLeaderboards(leaderboards, m_connectedUsers, 10, 1, 1);
+        if (db::Result::SUCCESS != res)
+        {
+            return Result::FAILED;
+        }
+        l.unlock();
 
-    for (auto& scoreUser : lb)
-    {
-        LOG_DEBUG(m_logger, "%015ld -> <%ld, %s>",
-            scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
+        LOG_DEBUG(m_logger, "Leaderboard:");
+        for (auto&& scoreUser : leaderboards[-1])
+        {
+            LOG_DEBUG(m_logger, "\t%015ld -> <%ld, %s>",
+                scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
+        }
+
+        for (auto&& userLb : leaderboards)
+        {
+            if (-1 == userLb.first)
+            {
+                continue;
+            }
+            LOG_DEBUG(m_logger, "User %ld leaderboard:", userLb.first);
+            for (auto&& scoreUser : userLb.second)
+            {
+                LOG_DEBUG(m_logger, "\t%015ld -> <%ld, %s>",
+                    scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
+            }
+        }
     }
 
     return Result::SUCCESS;
@@ -79,6 +98,11 @@ Result Logic::onUserConnected(const int64_t id)
 // user_disconnected(id)
 Result Logic::onUserDisconnected(const int64_t id)
 {
+    {
+        std::unique_lock<std::mutex> l(m_connectedUsersGuard);
+        m_connectedUsers.erase(id);
+    }
+
     LOG_DEBUG(m_logger, "User was disconnected <id: %ld>", id);
 
     return Result::SUCCESS;

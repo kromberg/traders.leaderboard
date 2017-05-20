@@ -3,6 +3,8 @@
 
 #include <ctime>
 #include <string>
+#include <unordered_set>
+#include <mutex>
 
 #include "../logger/LoggerFwd.h"
 #include "../db/Fwd.h"
@@ -15,6 +17,8 @@ class Logic
 {
 private:
     db::StoragePtr m_storage;
+    std::unordered_set<int64_t> m_connectedUsers;
+    std::mutex m_connectedUsersGuard;
 
     logger::CategoryPtr m_logger;
 
