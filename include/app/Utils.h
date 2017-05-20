@@ -7,6 +7,7 @@ enum class Result : uint8_t
 {
     SUCCESS,
     FAILED,
+    INVALID_STATE,
 };
 } // namespace app
 

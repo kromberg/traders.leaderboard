@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_set>
 #include <mutex>
+#include <thread>
 
 #include "../logger/LoggerFwd.h"
 #include "../db/Fwd.h"
@@ -16,15 +17,35 @@ namespace app
 class Logic
 {
 private:
+    enum State
+    {
+        CREATED,
+        CONFIGURED,
+        STARTED,
+        STOPPED,
+    };
+private:
+    logger::CategoryPtr m_logger;
+    State m_state = CREATED;
+    int32_t m_loopIntervalSeconds = 5;
+    volatile bool m_loopIsRunning = false;
+    std::thread m_loopThread;
+
     db::StoragePtr m_storage;
     std::unordered_set<int64_t> m_connectedUsers;
     std::mutex m_connectedUsersGuard;
 
-    logger::CategoryPtr m_logger;
+private:
+    void loop();
+    void loopFunc();
 
 public:
     Logic();
     virtual ~Logic();
+
+    Result configure();
+    Result start();
+    void stop();
 
     // user_registered(id,name)
     virtual Result onUserRegistered(const int64_t id, const std::string& name);

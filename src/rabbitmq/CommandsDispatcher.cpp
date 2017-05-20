@@ -19,10 +19,15 @@ const Dispatcher::MessageProcFuncsMap Dispatcher::m_messageProcFuncsMap =
 Dispatcher::Dispatcher()
 {
     m_logger = logger::Logger::getLogCategory("RMQ_DISPATCHER");
+
+    m_logic.configure();
+    m_logic.start();
 }
 
 Dispatcher::~Dispatcher()
-{}
+{
+    m_logic.stop();
+}
 
 // user_registered(id,name)
 Result Dispatcher::processUserRegistered(Dispatcher& dispatcher, const std::string& command, ProcessingItem&& item)
