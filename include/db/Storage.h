@@ -6,10 +6,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "../common/Types.h"
 #include "Fwd.h"
 
 namespace db
 {
+using common::State;
+using common::Result;
 
 struct User
 {

@@ -5,81 +5,45 @@
 namespace rabbitmq
 {
 
-AMQP::Deferred& Publisher::startTransaction()
+Result Publisher::startTransactionSync()
 {
-    using namespace logger;
-    using namespace std::placeholders;
-
     m_transactionMessagesCount = 0;
 
-    m_transactionStarted.reset();
-
-    return channel().startTransaction()
-        .onSuccess(std::bind(&Publisher::onSuccessStartTransactionCallback, this))
-        .onError(std::bind(&Publisher::onErrorStartTransactionCallback, this, _1))
-        .onFinalize(
-            std::bind(
-                &Publisher::onFinalizeCallback,
-                this,
-                Level::DEBUG,
-                "Start Transaction operation was finalized"));
+    SyncObj<Result> result;
+    channel().startTransaction()
+        .onSuccess([&m_logger, &result] () -> void
+            {
+                LOG_DEBUG(m_logger, "Transaction was started");
+                result.set(Result::SUCCESS);
+            })
+        .onError([&m_logger, &result] (const char* message) -> void
+            {
+                LOG_ERROR(m_logger, "Cannot start transaction. Error message: %s",
+                    message);
+                result.set(Result::FAILED);
+            });
+    result.wait();
+    return result.get();
 }
 
-void Publisher::startTransactionSync()
+Result Publisher::commitTransactionSync()
 {
-    startTransaction();
-    m_transactionStarted.wait();
-}
-
-AMQP::Deferred& Publisher::commitTransaction()
-{
-    using namespace logger;
-    using namespace std::placeholders;
-
-    m_transactionCommitted.reset();
-
-    return channel().commitTransaction()
-        .onSuccess(std::bind(&Publisher::onSuccessCommitTransactionCallback, this, m_transactionMessagesCount))
-        .onError(std::bind(&Publisher::onErrorCommitTransactionCallback, this, _1))
-        .onFinalize(
-            std::bind(
-                &Publisher::onFinalizeCallback,
-                this,
-                Level::DEBUG,
-                "Commit Transaction operation was finalized"));
-}
-
-void Publisher::commitTransactionSync()
-{
-    commitTransaction();
-    m_transactionCommitted.wait();
-}
-
-void Publisher::onSuccessStartTransactionCallback()
-{
-    LOG_DEBUG(m_logger, "Transaction was started");
-    m_transactionStarted.set();
-}
-
-void Publisher::onErrorStartTransactionCallback(const char* msg)
-{
-    LOG_ERROR(m_logger, "Error occurred while starting transaction. Description: %s",
-        msg);
-    m_transactionStarted.set();
-}
-
-void Publisher::onSuccessCommitTransactionCallback(const size_t transactionMessagesCount)
-{
-    LOG_DEBUG(m_logger, "Transaction was committed. %zu messages were published",
-        transactionMessagesCount);
-    m_transactionCommitted.set();
-}
-
-void Publisher::onErrorCommitTransactionCallback(const char* msg)
-{
-    LOG_ERROR(m_logger, "Error occurred while committing transaction. Description: %s",
-        msg);
-    m_transactionCommitted.set();
+    SyncObj<Result> result;
+    channel().startTransaction()
+        .onSuccess([&m_logger, &result, &m_transactionMessagesCount] () -> void
+            {
+                LOG_DEBUG(m_logger, "Transaction was committed. %zu messages were published",
+                    m_transactionMessagesCount);
+                result.set(Result::SUCCESS);
+            })
+        .onError([&m_logger, &result] (const char* message) -> void
+            {
+                LOG_ERROR(m_logger, "Cannot commit transaction. Error message: %s",
+                    message);
+                result.set(Result::FAILED);
+            });
+    result.wait();
+    return result.get();
 }
 
 } // namespace rabbitmq

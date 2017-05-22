@@ -6,22 +6,17 @@
 #include <unordered_map>
 #include <mutex>
 
+#include "../common/Types.h"
 #include "LoggerFwd.h"
 #include "LogWriter.h"
 
 namespace logger
 {
+using common::State;
+
 class Logger
 {
 private:
-    enum class State : uint8_t
-    {
-        CREATED,
-        CONFIGURED,
-        INITIALIZED,
-        DEINITIALIZED,
-    };
-
     State m_state = State::CREATED;
     LogWriter m_writer;
 

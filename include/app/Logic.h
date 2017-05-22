@@ -7,26 +7,21 @@
 #include <mutex>
 #include <thread>
 
+#include "../common/Types.h"
 #include "../logger/LoggerFwd.h"
 #include "../db/Fwd.h"
 #include "Utils.h"
 
 namespace app
 {
+using common::State;
+using common::Result;
 
 class Logic
 {
 private:
-    enum State
-    {
-        CREATED,
-        CONFIGURED,
-        STARTED,
-        STOPPED,
-    };
-private:
     logger::CategoryPtr m_logger;
-    State m_state = CREATED;
+    State m_state = State::CREATED;
     int32_t m_loopIntervalSeconds = 5;
     volatile bool m_loopIsRunning = false;
     std::thread m_loopThread;

@@ -54,6 +54,11 @@ inline bool Logger::configure(const std::string& filename)
 
 inline bool Logger::initialize()
 {
+    if (State::CONFIGURED != m_state)
+    {
+        return false;
+    }
+
     if (!m_writer.initialize())
     {
         return false;
@@ -65,6 +70,11 @@ inline bool Logger::initialize()
 
 inline void Logger::deinitialize()
 {
+    if (State::INITIALIZED != m_state)
+    {
+        return false;
+    }
+
     m_writer.deinitialize();
 
     m_state = State::DEINITIALIZED;

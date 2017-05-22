@@ -204,14 +204,14 @@ Result Dispatcher::processMessage(ProcessingItem&& item)
     if (*item.m_message.rbegin() != ')')
     {
         LOG_ERROR(m_logger, "Cannot process command: invalid format");
-        return Result::INVFMT;
+        return Result::INVALID_FORMAT;
     }
 
     size_t pos = item.m_message.find('(');
     if (std::string::npos == pos)
     {
         LOG_ERROR(m_logger, "Cannot process command: invalid format");
-        return Result::INVFMT;
+        return Result::INVALID_FORMAT;
     }
 
     std::string command(item.m_message, 0, pos);

@@ -10,6 +10,11 @@
 #include <rabbitmq/Handler.h>
 #include <rabbitmq/Processor.h>
 
+#include <commong/Types.h>
+
+using common::State;
+using common::Result;
+
 void writeTestData(
     rabbitmq::Publisher& publisher,
     const size_t countUsers,

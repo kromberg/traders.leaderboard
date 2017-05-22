@@ -10,23 +10,11 @@ class TcpHandler;
 class Handler;
 typedef std::shared_ptr<Handler> HandlerPtr;
 class Consumer;
+typedef std::unique_ptr<Consumer> ConsumerPtr;
 class Publisher;
+typedef std::unique_ptr<Publisher> PublisherPtr;
 class Processor;
 typedef std::shared_ptr<Processor> ProcessorPtr;
-
-enum Result : uint16_t
-{
-    SUCCESS,
-    FAILED,
-    INVSTATE,
-    INVFMT,
-    QUEUE_OVERFLOW,
-    NULL_CHANNEL,
-    CMD_NOT_SUPPORTED,
-    DB_ERROR,
-};
-
-const char* resultToStr(const Result r);
 
 } // namespace rabbitmq
 

@@ -5,43 +5,165 @@
 namespace rabbitmq
 {
 
-void Handler::waitChannelReady()
+Result Handler::configure(AMQP::Address&& address)
 {
+    if (State::CONFIGURED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot configure Handler in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+    Result res = Result::SUCCESS;
+
+    m_address = std::move(address);
+
+    res = customConfigure();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Custom configuration was failed with result %d(%s)",
+            static_cast<int32_t>(res), resultToStr(res));
+        return res;
+    }
+    m_state = State::CONFUGRED;
+    return Result::SUCCESS;
+}
+
+Result Handler::initialize()
+{
+    if (State::CONFIGURED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot initialize Handler in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    Result res = Result::SUCCESS;
+
+    res = customInitialize();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Custom initialize was failed with result %d(%s)",
+            static_cast<int32_t>(res), resultToStr(res));
+        return res;
+    }
+    m_state = State::INITIALIZED;
+    return Result::SUCCESS;
+}
+
+Result Handler::start()
+{
+    if (State::STARTED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot start Handler in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    Result res = Result::SUCCESS;
+
+    SyncObj<Result> channelResult;
+    // create a AMQP connection object
+    m_connection.reset(new AMQP::TcpConnection(&m_handler, m_address));
+    m_channel.reset(new AMQP::TcpChannel(m_connection.get()));
+
+    // set callbacks
+    channel().onError([] (const char* message) -> void
+        {
+            LOG_ERROR(m_logger, "Channel error. Message: %s", message);
+            channelResult.set(Result::FAILED);
+        });
+    channel().onReady([] () -> void
+        {
+            LOG_INFO(m_logger, "Channel is ready");
+            channelResult.set(Result::SUCCESS);
+        });
+
     m_channelReady.wait();
+    res = channelResult.get();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Failed to start channel");
+        return res;
+    }
+
+    res = customStart();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Custom start was failed with result %d(%s)",
+            static_cast<int32_t>(res), resultToStr(res));
+        return res;
+    }
+    m_state = State::STARTED;
+    return Result::SUCCESS;
 }
 
-void Handler::onStartCallback(const std::string &consumertag)
+Result Handler::stop()
 {
-    LOG_DEBUG(m_logger, "Consume operation started. Consumer tag: %s",
-        consumertag.c_str());
+    if (State::STARTED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot stop Handler in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    Result res = Result::SUCCESS;
+
+    res = customStart();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Custom stop was failed with result %d(%s)",
+            static_cast<int32_t>(res), resultToStr(res));
+        return res;
+    }
+    m_state = State::STOPPED;
+    return Result::SUCCESS;
 }
 
-void Handler::onErrorCallback(const char *message)
+Result Handler::deinitialize()
 {
-    LOG_ERROR(m_logger, "Consumer error. Message: %s", message);
+    if (State::STOPPED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot DEinitialize Handler in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    Result res = Result::SUCCESS;
+
+    res = customDeinitialize();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Custom deinitialize was failed with result %d(%s)",
+            static_cast<int32_t>(res), resultToStr(res));
+        return res;
+    }
+    m_state = State::STOPPED;
+    return Result::SUCCESS;
 }
 
-void Handler::onReadyCallback()
+Result Handler::customInitialize()
 {
-    LOG_INFO(m_logger, "Channel is ready");
-    m_channelReady.set();
+    return Result::SUCCESS;
 }
 
-void Handler::onSuccessCallback(const logger::Level level, const char* logMessage)
+Result Handler::customConfigure()
 {
-    LOG(m_logger, level, "%s", logMessage);
+    return Result::SUCCESS;
 }
 
-void Handler::onFinalizeCallback(const logger::Level level, const char* logMessage)
+Result Handler::customStart()
 {
-    LOG(m_logger, level, "%s", logMessage);
+    return Result::SUCCESS;
 }
 
-void Handler::onQueueSuccessCallback(
-    const std::string &name, uint32_t messagecount, uint32_t consumercount)
+Result Handler::customStop()
 {
-    LOG_INFO(m_logger, "Queue declared %s. Messages count: %u. Consumers count: %u",
-        name.c_str(), messagecount, consumercount);
+    return Result::SUCCESS;
+}
+
+Result Handler::customDeinitialize()
+{
+    return Result::SUCCESS;
 }
 
 } // namespace rabbitmq

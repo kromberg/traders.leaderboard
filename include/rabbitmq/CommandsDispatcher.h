@@ -12,11 +12,15 @@
 
 #include "../app/Logic.h"
 
+#include "../common/Types.h"
+
 #include "Fwd.h"
 #include "ProcessingItem.h"
 
 namespace rabbitmq
 {
+using common::Result;
+
 class Dispatcher
 {
 private:
@@ -81,7 +85,7 @@ Result Dispatcher::getArguments(
         LOG_ERROR(m_logger, "Cannot process command '%s': invalid arguments format: "
             "actual number of arguments[%d] does not equal to expected number of arguments[%zu]",
             command.c_str(), res, countOfExpectedArgs);
-        return Result::INVFMT;
+        return Result::INVALID_FORMAT;
     }
     return Result::SUCCESS;
 }

@@ -10,6 +10,7 @@
 #include <amqpcpp.h>
 
 #include "../logger/LoggerFwd.h"
+#include "../common/Types.h"
 
 #include "Fwd.h"
 #include "ProcessingItem.h"
@@ -17,16 +18,12 @@
 
 namespace rabbitmq
 {
+using common::State;
+using common::Result;
 
 class Processor
 {
 private:
-    enum class State : uint16_t
-    {
-        CREATED,
-        STARTED,
-        STOPPED,
-    };
     static const char* stateToStr(const State s);
 
     volatile State m_state;
@@ -60,7 +57,7 @@ Result Processor::pushMessage(Args... args)
 {
     if (State::STARTED != m_state)
     {
-        return Result::INVSTATE;
+        return Result::INVALID_STATE;
     }
     std::unique_lock<std::mutex> l(m_processingQueueGuard);
 

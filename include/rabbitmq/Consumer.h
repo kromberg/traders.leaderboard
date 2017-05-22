@@ -1,9 +1,6 @@
 #ifndef MY_RABBIT_MQ_CONSUMER_H
 #define MY_RABBIT_MQ_CONSUMER_H
 
-#include <functional>
-#include <memory>
-
 #include <amqpcpp.h>
 
 #include "../logger/LoggerFwd.h"
@@ -32,43 +29,12 @@ public:
 
     void attachProcessor(ProcessorPtr& processor);
 
-    // todo: return DeferredConsumer
     template<class... Args>
-    AMQP::Deferred& consume(Args... args);
+    Result consumeSync(Args... args);
 };
 
-////////////////////////////////////////////////////////////////////////////////
-// INLINE
-////////////////////////////////////////////////////////////////////////////////
-inline Consumer::Consumer(EventLoop& loop, const AMQP::Address &address):
-    Handler(loop, address)
-{
-    m_logger = logger::Logger::getLogCategory("RMQ_CONSUMER");
-}
-
-inline void Consumer::attachProcessor(ProcessorPtr& processor)
-{
-    atomic_store(&m_processor, processor);
-}
-
-template<class... Args>
-inline AMQP::Deferred& Consumer::consume(Args... args)
-{
-    using namespace logger;
-    using namespace std::placeholders;
-
-    return channel().consume(std::forward<Args>(args)...)
-        .onReceived(std::bind(&Consumer::onMessageCallback, this, _1, _2, _3))
-        .onSuccess(std::bind(&Consumer::onStartCallback, this, _1))
-        .onError(std::bind(&Consumer::onErrorCallback, this, _1))
-        .onFinalize(
-            std::bind(
-                &Consumer::onFinalizeCallback,
-                this,
-                Level::INFO,
-                "Consume operation was finalized"));
-}
-
 } // namespace rabbitmq
+
+#include "ConsumerImpl.hpp"
 
 #endif // MY_RABBIT_MQ_CONSUMER_H
