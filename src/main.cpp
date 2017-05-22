@@ -64,6 +64,12 @@ void writeTestData(
             return ;
         }
 
+        if (!publisher.publish("my-exchange", "my-key", "user_disconnected(" + idStr + ")"))
+        {
+            LOG_ERROR(log, "Cannot publish message");
+            return ;
+        }
+
         if (publisher.transactionMessagesCount() >= trasnactionSize)
         {
             res = publisher.commitTransactionSync();
@@ -137,12 +143,23 @@ int main(int argc, char* argv[])
 
         rabbitmq::Consumer consumer(eventLoop);
         consumer.attachProcessor(processor);
-        consumer.configure(std::move(address));
-        consumer.initialize();
-        consumer.start();
+        Result res = consumer.configure(std::move(address));
+        if (Result::SUCCESS != res)
+        {
+            return 3;
+        }
+        res = consumer.initialize();
+        if (Result::SUCCESS != res)
+        {
+            return 3;
+        }
+        res = consumer.start();
+        if (Result::SUCCESS != res)
+        {
+            return 3;
+        }
 
-        // use the channel object to call the AMQP method you like
-        Result res = consumer.declareExchangeSync("my-exchange", AMQP::fanout);
+        res = consumer.declareExchangeSync("my-exchange", AMQP::fanout);
         if (Result::SUCCESS != res)
         {
             LOG_ERROR(log, "Cannot declare exchange");
@@ -158,6 +175,12 @@ int main(int argc, char* argv[])
         if (Result::SUCCESS != res)
         {
             LOG_ERROR(log, "Cannot bind queue");
+            return 3;
+        }
+        res = consumer.setQosSync(1);
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(log, "Cannot set QOS");
             return 3;
         }
 
@@ -191,14 +214,40 @@ int main(int argc, char* argv[])
 
         // todo: check result
         rabbitmq::Publisher publisher(eventLoop);
-        publisher.configure(std::move(address));
-        publisher.initialize();
-        publisher.start();
+        Result res = publisher.configure(std::move(address));
+        if (Result::SUCCESS != res)
+        {
+            return 3;
+        }
+        res = publisher.initialize();
+        if (Result::SUCCESS != res)
+        {
+            return 3;
+        }
+        res = publisher.start();
+        if (Result::SUCCESS != res)
+        {
+            return 3;
+        }
 
-        // use the channel object to call the AMQP method you like
-        publisher.declareExchangeSync("my-exchange", AMQP::fanout);
-        publisher.declareQueueSync("my-queue");
-        publisher.bindQueueSync("my-exchange", "my-queue", "my-routing-key");
+        res = publisher.declareExchangeSync("my-exchange", AMQP::fanout);
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(log, "Cannot declare exchange");
+            return 3;
+        }
+        res = publisher.declareQueueSync("my-queue");
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(log, "Cannot declare queue");
+            return 3;
+        }
+        res = publisher.bindQueueSync("my-exchange", "my-queue", "my-routing-key");
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(log, "Cannot bind queue");
+            return 3;
+        }
 
         writeTestData(publisher, countUsers, dealsPerUser, transactionSize);
 

@@ -35,10 +35,13 @@ private:
         int64_t getWeekScores(const Time currentTime) const;
     };
     typedef std::unordered_map<int64_t, UserStorage> UsersStorage;
+    typedef std::unordered_set<int64_t> ConnectedUsersStorage;
 
 private:
     UsersStorage m_users;
     mutable std::mutex m_usersMapGuard;
+    ConnectedUsersStorage m_connectedUsers;
+    mutable std::mutex m_connectedUsersGuard;
 
     logger::CategoryPtr m_logger;
 
@@ -50,11 +53,13 @@ public:
     virtual Result renameUser(const int64_t id, const std::string& name) override;
     virtual Result storeUserDeal(const int64_t id, const std::time_t t, const int64_t amount) override;
 
+    virtual Result storeConnectedUser(const int64_t id) override;
+    virtual Result removeConnectedUser(const int64_t id) override;
+
     virtual Result getUser(User& user, const int64_t id) const override;
 
     virtual Result getLeaderboards(
         Leaderboards& leaderboards,
-        const std::unordered_set<int64_t>& ids,
         const int64_t count = -1,
         const uint64_t before = 10,
         const uint64_t after = 10)

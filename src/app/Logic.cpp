@@ -27,11 +27,6 @@ void Logic::loop()
     {
         time_t startTime = time(nullptr);
         LOG_INFO(m_logger, "Logic loop was started at %s", common::timeToString(startTime).c_str());
-        std::unordered_set<int64_t> connectedUsers;
-        {
-            std::unique_lock<std::mutex> l(m_connectedUsersGuard);
-            connectedUsers = m_connectedUsers;
-        }
 
         loopFunc();
 
@@ -55,7 +50,7 @@ void Logic::loop()
 void Logic::loopFunc()
 {
     db::UserLeaderboards leaderboards;
-    db::Result res = m_storage->getLeaderboards(leaderboards, m_connectedUsers, 10, 1, 1);
+    db::Result res = m_storage->getLeaderboards(leaderboards, 10, 1, 1);
     if (db::Result::SUCCESS != res)
     {
         LOG_WARN(m_logger, "Cannot get leaderboard");
@@ -164,25 +159,21 @@ Result Logic::onUserDealWon(const int64_t id, const std::time_t t, const int64_t
 // user_connected(id)
 Result Logic::onUserConnected(const int64_t id)
 {
+    db::Result res = m_storage->storeConnectedUser(id);
+    if (db::Result::SUCCESS != res)
     {
-        std::unique_lock<std::mutex> l(m_connectedUsersGuard);
-        m_connectedUsers.emplace(id);
+        return Result::FAILED;
     }
-
-    LOG_DEBUG(m_logger, "User was connected <id: %ld>", id);
-
     return Result::SUCCESS;
 }
 // user_disconnected(id)
 Result Logic::onUserDisconnected(const int64_t id)
 {
+    db::Result res = m_storage->removeConnectedUser(id);
+    if (db::Result::SUCCESS != res)
     {
-        std::unique_lock<std::mutex> l(m_connectedUsersGuard);
-        m_connectedUsers.erase(id);
+        return Result::FAILED;
     }
-
-    LOG_DEBUG(m_logger, "User was disconnected <id: %ld>", id);
-
     return Result::SUCCESS;
 }
 

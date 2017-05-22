@@ -101,6 +101,36 @@ Result InMemoryStorage::storeUserDeal(const int64_t id, const std::time_t t, con
     return Result::SUCCESS;
 }
 
+Result InMemoryStorage::storeConnectedUser(const int64_t id)
+{
+    {
+        std::unique_lock<std::mutex> l(m_connectedUsersGuard);
+        m_connectedUsers.emplace(id);
+    }
+
+    LOG_DEBUG(m_logger, "Connected user was stored <id: %ld>", id);
+
+    return Result::SUCCESS;
+}
+
+Result InMemoryStorage::removeConnectedUser(const int64_t id)
+{
+    {
+        std::unique_lock<std::mutex> l(m_connectedUsersGuard);
+        auto it = m_connectedUsers.find(id);
+        if (m_connectedUsers.end() == it)
+        {
+            LOG_ERROR(m_logger, "Cannot remove connected user <id: %ld>. User is not found", id);
+            return Result::USER_NOT_FOUND;
+        }
+        m_connectedUsers.erase(it);
+    }
+
+    LOG_DEBUG(m_logger, "Connected user was removed <id: %ld>", id);
+
+    return Result::SUCCESS;
+}
+
 Result InMemoryStorage::getUser(User& user, const int64_t id) const
 {
     std::unique_lock<std::mutex> l(m_usersMapGuard);
@@ -119,13 +149,18 @@ Result InMemoryStorage::getUser(User& user, const int64_t id) const
 
 Result InMemoryStorage::getLeaderboards(
     Leaderboards& leaderboards,
-    const std::unordered_set<int64_t>& ids,
     const int64_t count,
     const uint64_t before,
     const uint64_t after)
         const
 {
     time_t currentTime = time(nullptr);
+
+    std::unordered_set<int64_t> connectedUsers;
+    {
+        std::unique_lock<std::mutex> l(m_connectedUsersGuard);
+        connectedUsers = m_connectedUsers;
+    }
 
     Leaderboard tmpLeaderboard;
     {
@@ -155,7 +190,7 @@ Result InMemoryStorage::getLeaderboards(
             std::forward_as_tuple(begin, end));
     }
 
-    if (ids.empty())
+    if (connectedUsers.empty())
     {
         return Result::SUCCESS;
     }
@@ -189,8 +224,8 @@ Result InMemoryStorage::getLeaderboards(
             }
         }
 
-        auto idIt = ids.find(lbItem.second.m_id);
-        if (ids.end() != idIt)
+        auto idIt = connectedUsers.find(lbItem.second.m_id);
+        if (connectedUsers.end() != idIt)
         {
             LOG_DEBUG(m_logger, "User %ld found: adding leaderborad", *idIt);
             currentIdsToCount.emplace(*idIt, 0);

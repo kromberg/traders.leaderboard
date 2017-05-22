@@ -33,6 +33,8 @@ const char* resultToStr(const Result r)
             return "USER ALREADY REGISTERED";
         case Result::USER_REG_ERROR:
             return "USER REGISTRATION ERROR";
+        case Result::USER_CONN_ERROR:
+            return "USER CONNECTION ERROR";
         case Result::USER_NOT_FOUND:
             return "USER NOT FOUND";
         case Result::UPDATE_ERROR:

@@ -19,6 +19,7 @@ enum class Result
     FAILED,
     USER_ALREADY_REG,
     USER_REG_ERROR,
+    USER_CONN_ERROR,
     USER_NOT_FOUND,
     UPDATE_ERROR,
     INVALID_STATE,

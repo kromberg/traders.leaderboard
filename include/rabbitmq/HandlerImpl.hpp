@@ -83,7 +83,7 @@ template<class... Args>
 inline Result Handler::setQosSync(Args... args)
 {
     SyncObj<Result> result;
-    channel().bindQueue(std::forward<Args>(args)...)
+    channel().setQos(std::forward<Args>(args)...)
         .onSuccess([&] () -> void
             {
                 LOG_INFO(m_logger, "QOS was set");

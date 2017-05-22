@@ -27,6 +27,7 @@ MongodbStorage::MongodbStorage()
     m_client = mongocxx::client(uri);
     m_db = m_client["db"];
     m_collection = m_db["test"];
+    m_connectedUsersCollection = m_db["connected_users"];
 
     m_logger = logger::Logger::getLogCategory("DB_MONGO");
 }
@@ -152,19 +153,149 @@ Result MongodbStorage::storeUserDeal(const int64_t id, const std::time_t t, cons
 
     LOG_DEBUG(m_logger, "User deal was stored <id: %ld, time: %s, amount: %ld>",
         id, ctime(&t), amount);
-
     return Result::SUCCESS;
+}
+
+Result MongodbStorage::storeConnectedUser(const int64_t id)
+{
+    mongocxx::stdx::optional<mongocxx::result::insert_one> result =
+        m_connectedUsersCollection.insert_one(
+            document{} <<
+            "id" << id <<
+            finalize);
+    if (!result)
+    {
+        LOG_ERROR(m_logger, "Cannot store connected user <id: %ld>", id);
+        return Result::USER_CONN_ERROR;
+    }
+
+    LOG_DEBUG(m_logger, "Connected user was stored <id: %ld>", id);
+    return Result::SUCCESS;
+}
+
+Result MongodbStorage::removeConnectedUser(const int64_t id)
+{
+    mongocxx::stdx::optional<mongocxx::result::delete_result> result =
+        m_connectedUsersCollection.delete_one(
+            document{} <<
+            "id" << id <<
+            finalize);
+    if (!result)
+    {
+        LOG_ERROR(m_logger, "Cannot remove connected user <id: %ld>", id);
+        return Result::USER_CONN_ERROR;
+    }
+    if (0 == (*result).deleted_count())
+    {
+        LOG_ERROR(m_logger, "Cannot remove connected user <id: %ld>", id);
+        return Result::USER_CONN_ERROR;
+    }
+
+    LOG_DEBUG(m_logger, "Connected user was remove <id: %ld>", id);
+    return Result::SUCCESS;
+}
+
+std::unordered_set<int64_t> MongodbStorage::getConnectedUsers() const
+{
+    mongocxx::cursor cursor =
+        m_connectedUsersCollection.find(
+            document{} <<
+            finalize);
+
+    std::unordered_set<int64_t> result;
+    uint64_t goodDocuments = 0, badDocuments = 0;
+    for (const bsoncxx::document::view& view : cursor)
+    {
+        LOG_DEBUG(m_logger, "Connected users. Got document : %s",
+            bsoncxx::to_json(view).c_str());
+
+        try
+        {
+            bsoncxx::document::element id = view["id"];
+            if (id.type() != bsoncxx::type::k_int64)
+            {
+                LOG_DEBUG(m_logger, "Cannot get 'id' from the document");
+                ++ badDocuments;
+                continue;
+            }
+            result.emplace(id.get_int64());
+            ++ goodDocuments;
+        }
+        catch (const bsoncxx::exception& e)
+        {
+            LOG_DEBUG(m_logger, "Exception '%s' was thrown while parsing document",
+                e.what());
+            ++ badDocuments;
+            continue;
+        }
+    }
+    if (badDocuments > 0)
+    {
+        LOG_WARN(m_logger, "Connected users. Failed to process %lu documents", badDocuments);
+    }
+    LOG_DEBUG(m_logger, "Connected users. Processed %lu documents", goodDocuments);
+
+    return result;
 }
 
 Result MongodbStorage::getUser(User& user, const int64_t id) const
 {
-    // todo
-    return Result::SUCCESS;
+    mongocxx::cursor cursor =
+        m_collection.find(
+            document{} <<
+            "id" << id <<
+            finalize);
+
+    uint64_t goodDocuments = 0, badDocuments = 0;
+    for (const bsoncxx::document::view& view : cursor)
+    {
+        LOG_DEBUG(m_logger, "Get user. Got document : %s",
+            bsoncxx::to_json(view).c_str());
+
+        try
+        {
+            bsoncxx::document::element id = view["id"];
+            if (id.type() != bsoncxx::type::k_int64)
+            {
+                LOG_DEBUG(m_logger, "Cannot get 'id' from the document");
+                ++ badDocuments;
+                continue;
+            }
+            bsoncxx::document::element name = view["name"];
+            if (id.type() != bsoncxx::type::k_utf8)
+            {
+                LOG_DEBUG(m_logger, "Cannot get 'name' from the document");
+                ++ badDocuments;
+                continue;
+            }
+            user.m_id = id.get_int64();
+            user.m_name = name.get_utf8().value.to_string();
+            ++ goodDocuments;
+            break;
+        }
+        catch (const bsoncxx::exception& e)
+        {
+            LOG_DEBUG(m_logger, "Exception '%s' was thrown while parsing document",
+                e.what());
+            ++ badDocuments;
+            continue;
+        }
+    }
+    if (goodDocuments > 0)
+    {
+        LOG_DEBUG(m_logger, "Get user. Processed %lu documents", goodDocuments);
+        LOG_DEBUG(m_logger, "Found user: <id: %ld, name: %s>", user.m_id, user.m_name.c_str());
+        return Result::SUCCESS;
+    }
+    else
+    {
+        LOG_ERROR(m_logger, "Cannot get user with id: %ld", id);
+        return Result::USER_NOT_FOUND;
+    }
 }
 
 Result MongodbStorage::getLeaderboards(
     Leaderboards& leaderboards,
-    const std::unordered_set<int64_t>& ids,
     const int64_t count,
     const uint64_t before,
     const uint64_t after)
@@ -172,6 +303,8 @@ Result MongodbStorage::getLeaderboards(
 {
     using std::chrono::system_clock;
     typedef std::chrono::duration<int, std::ratio<24 * 60 * 60> > duration_days;
+
+    std::unordered_set<int64_t> connectedUsers = getConnectedUsers();
 
     // last week
     system_clock::time_point tp = system_clock::now() - duration_days(7);
@@ -292,8 +425,8 @@ Result MongodbStorage::getLeaderboards(
                 }
             }
 
-            auto idIt = ids.find(id.get_int64());
-            if (ids.end() != idIt)
+            auto idIt = connectedUsers.find(id.get_int64());
+            if (connectedUsers.end() != idIt)
             {
                 LOG_DEBUG(m_logger, "User %ld found: adding leaderborad", *idIt);
                 currentIdsToCount.emplace(*idIt, 0);
@@ -312,12 +445,12 @@ Result MongodbStorage::getLeaderboards(
             ++ badDocuments;
             continue;
         }
-
-        if (badDocuments > 0)
-        {
-            LOG_WARN(m_logger, "Failed to process %lu documents", badDocuments);
-        }
     }
+    if (badDocuments > 0)
+    {
+        LOG_WARN(m_logger, "Leaderboard. Failed to process %lu documents", badDocuments);
+    }
+    LOG_DEBUG(m_logger, "Leaderboard. Processed %lu documents", goodDocuments);
 
     leaderboards.emplace(-1, std::move(tmpLeaderboard));
 

@@ -26,8 +26,6 @@ private:
     std::thread m_loopThread;
 
     db::StoragePtr m_storage;
-    std::unordered_set<int64_t> m_connectedUsers;
-    std::mutex m_connectedUsersGuard;
 
 private:
     void loop();
