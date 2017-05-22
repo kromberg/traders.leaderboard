@@ -7,7 +7,7 @@ namespace rabbitmq
 
 Result Handler::configure(AMQP::Address&& address)
 {
-    if (State::CONFIGURED != m_state)
+    if (State::CREATED != m_state)
     {
         LOG_ERROR(m_logger, "Cannot configure Handler in state %d(%s)",
             static_cast<int32_t>(m_state), common::stateToStr(m_state));
@@ -15,7 +15,7 @@ Result Handler::configure(AMQP::Address&& address)
     }
     Result res = Result::SUCCESS;
 
-    m_address = std::move(address);
+    m_address.reset(new AMQP::Address(std::move(address)));
 
     res = customConfigure();
     if (Result::SUCCESS != res)
@@ -24,7 +24,7 @@ Result Handler::configure(AMQP::Address&& address)
             static_cast<int32_t>(res), resultToStr(res));
         return res;
     }
-    m_state = State::CONFUGRED;
+    m_state = State::CONFIGURED;
     return Result::SUCCESS;
 }
 
@@ -52,7 +52,7 @@ Result Handler::initialize()
 
 Result Handler::start()
 {
-    if (State::STARTED != m_state)
+    if (State::INITIALIZED != m_state)
     {
         LOG_ERROR(m_logger, "Cannot start Handler in state %d(%s)",
             static_cast<int32_t>(m_state), common::stateToStr(m_state));
@@ -63,22 +63,22 @@ Result Handler::start()
 
     SyncObj<Result> channelResult;
     // create a AMQP connection object
-    m_connection.reset(new AMQP::TcpConnection(&m_handler, m_address));
+    m_connection.reset(new AMQP::TcpConnection(&m_handler, *m_address));
     m_channel.reset(new AMQP::TcpChannel(m_connection.get()));
 
     // set callbacks
-    channel().onError([] (const char* message) -> void
+    channel().onError([&] (const char* message) -> void
         {
             LOG_ERROR(m_logger, "Channel error. Message: %s", message);
             channelResult.set(Result::FAILED);
         });
-    channel().onReady([] () -> void
+    channel().onReady([&] () -> void
         {
             LOG_INFO(m_logger, "Channel is ready");
             channelResult.set(Result::SUCCESS);
         });
 
-    m_channelReady.wait();
+    channelResult.wait();
     res = channelResult.get();
     if (Result::SUCCESS != res)
     {
@@ -105,6 +105,10 @@ Result Handler::stop()
             static_cast<int32_t>(m_state), common::stateToStr(m_state));
         return Result::INVALID_STATE;
     }
+
+    m_channel->close();
+    m_channel.reset();
+    m_connection.reset();
 
     Result res = Result::SUCCESS;
 

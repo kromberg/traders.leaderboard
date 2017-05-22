@@ -68,7 +68,7 @@ inline bool Logger::initialize()
     return true;
 }
 
-inline void Logger::deinitialize()
+inline bool Logger::deinitialize()
 {
     if (State::INITIALIZED != m_state)
     {
@@ -78,6 +78,7 @@ inline void Logger::deinitialize()
     m_writer.deinitialize();
 
     m_state = State::DEINITIALIZED;
+    return true;
 }
 
 } // namespace logger

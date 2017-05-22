@@ -20,7 +20,7 @@ protected:
     void onMessageCallback(const AMQP::Message &message, uint64_t deliveryTag, bool redelivered);
 
 public:
-    Consumer(EventLoop& loop, const AMQP::Address &address);
+    Consumer(EventLoop& loop);
     virtual ~Consumer() = default;
     Consumer(const Consumer& c) = delete;
     Consumer(Consumer&& c) = default;
@@ -30,7 +30,7 @@ public:
     void attachProcessor(ProcessorPtr& processor);
 
     template<class... Args>
-    Result consumeSync(Args... args);
+    Result consume(Args... args);
 };
 
 } // namespace rabbitmq

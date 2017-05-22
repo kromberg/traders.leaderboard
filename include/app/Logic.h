@@ -10,7 +10,6 @@
 #include "../common/Types.h"
 #include "../logger/LoggerFwd.h"
 #include "../db/Fwd.h"
-#include "Utils.h"
 
 namespace app
 {

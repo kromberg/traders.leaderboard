@@ -39,7 +39,7 @@ public:
 
     bool configure(const std::string& filename = std::string());
     bool initialize();
-    void deinitialize();
+    bool deinitialize();
 };
 
 } // namespace logger

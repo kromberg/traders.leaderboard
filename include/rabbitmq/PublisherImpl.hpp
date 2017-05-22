@@ -3,8 +3,8 @@
 
 namespace rabbitmq
 {
-inline Publisher::Publisher(EventLoop& loop, const AMQP::Address &address):
-    Handler(loop, address)
+inline Publisher::Publisher(EventLoop& loop):
+    Handler(loop)
 {
     m_logger = logger::Logger::getLogCategory("RMQ_PUBLISHER");
 }

@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <memory>
 
-#include "Utils.h"
-
 namespace db
 {
 class Storage;

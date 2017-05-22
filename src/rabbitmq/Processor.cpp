@@ -5,20 +5,6 @@
 
 namespace rabbitmq
 {
-const char* Processor::stateToStr(const State s)
-{
-    switch (s)
-    {
-        case State::CREATED:
-            return "CREATED";
-        case State::STARTED:
-            return "STARTED";
-        case State::STOPPED:
-            return "STOPPED";
-    }
-    return "UNKNOWN";
-}
-
 Processor::Processor(const size_t queueCapacity):
     m_state(State::CREATED),
     m_queueCapacity(queueCapacity)
@@ -31,7 +17,7 @@ bool Processor::start()
     if (State::CREATED != m_state)
     {
         LOG_ERROR(m_logger, "Could not start processor in state %u(%s)",
-            static_cast<uint16_t>(m_state), stateToStr(m_state));
+            static_cast<uint16_t>(m_state), common::stateToStr(m_state));
         return false;
     }
     LOG_INFO(m_logger, "Starting processor");
@@ -50,7 +36,7 @@ void Processor::stop()
     if (State::STARTED != m_state)
     {
         LOG_ERROR(m_logger, "Could not stop processor in state %u(%s)",
-            static_cast<uint16_t>(m_state), stateToStr(m_state));
+            static_cast<uint16_t>(m_state), common::stateToStr(m_state));
         return ;
     }
     LOG_INFO(m_logger, "Stopping processor");

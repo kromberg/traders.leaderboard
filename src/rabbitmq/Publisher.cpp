@@ -11,12 +11,12 @@ Result Publisher::startTransactionSync()
 
     SyncObj<Result> result;
     channel().startTransaction()
-        .onSuccess([&m_logger, &result] () -> void
+        .onSuccess([&] () -> void
             {
                 LOG_DEBUG(m_logger, "Transaction was started");
                 result.set(Result::SUCCESS);
             })
-        .onError([&m_logger, &result] (const char* message) -> void
+        .onError([&] (const char* message) -> void
             {
                 LOG_ERROR(m_logger, "Cannot start transaction. Error message: %s",
                     message);
@@ -29,14 +29,14 @@ Result Publisher::startTransactionSync()
 Result Publisher::commitTransactionSync()
 {
     SyncObj<Result> result;
-    channel().startTransaction()
-        .onSuccess([&m_logger, &result, &m_transactionMessagesCount] () -> void
+    channel().commitTransaction()
+        .onSuccess([&] () -> void
             {
                 LOG_DEBUG(m_logger, "Transaction was committed. %zu messages were published",
                     m_transactionMessagesCount);
                 result.set(Result::SUCCESS);
             })
-        .onError([&m_logger, &result] (const char* message) -> void
+        .onError([&] (const char* message) -> void
             {
                 LOG_ERROR(m_logger, "Cannot commit transaction. Error message: %s",
                     message);

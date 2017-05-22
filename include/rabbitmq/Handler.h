@@ -5,11 +5,10 @@
 
 #include <amqpcpp.h>
 
-#include "../common/State.h"
+#include "../common/Types.h"
 #include "../logger/LoggerFwd.h"
 
 #include "Fwd.h"
-#include "Utils.h"
 #include "EventLoop.h"
 #include "TcpHandler.h"
 
@@ -23,7 +22,7 @@ class Handler
 protected:
     State m_state = State::CREATED;
 
-    AMQP::Address m_address;
+    std::unique_ptr<AMQP::Address> m_address;
 
     EventLoop& m_eventLoop;
     TcpHandler m_handler;

@@ -13,7 +13,7 @@ struct SyncObj
     std::mutex m_mutex;
     std::condition_variable m_cv;
     volatile bool m_flag = false;
-    volatile T m_value;
+    T m_value;
 
     void reset()
     {
@@ -25,7 +25,7 @@ struct SyncObj
     {
         std::unique_lock<std::mutex> l(m_mutex);
         m_flag = true;
-        m_value = std::forward(u);
+        m_value = std::forward<U>(u);
         m_cv.notify_one();
     }
 

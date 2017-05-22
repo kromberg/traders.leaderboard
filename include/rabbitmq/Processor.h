@@ -24,8 +24,6 @@ using common::Result;
 class Processor
 {
 private:
-    static const char* stateToStr(const State s);
-
     volatile State m_state;
     logger::CategoryPtr m_logger;
     std::thread m_thread;

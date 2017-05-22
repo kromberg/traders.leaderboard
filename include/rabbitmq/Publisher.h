@@ -20,12 +20,10 @@ namespace rabbitmq
 class Publisher : public Handler
 {
 private:
-    SyncObj m_transactionStarted;
-    SyncObj m_transactionCommitted;
     size_t m_transactionMessagesCount = 0;
 
 public:
-    Publisher(EventLoop& loop, const AMQP::Address &address);
+    Publisher(EventLoop& loop);
     virtual ~Publisher() = default;
     Publisher(const Publisher& c) = delete;
     Publisher(Publisher&& c) = default;

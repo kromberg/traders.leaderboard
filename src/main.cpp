@@ -10,7 +10,7 @@
 #include <rabbitmq/Handler.h>
 #include <rabbitmq/Processor.h>
 
-#include <commong/Types.h>
+#include <common/Types.h>
 
 using common::State;
 using common::Result;
@@ -21,7 +21,7 @@ void writeTestData(
     const size_t dealsPerUser,
     const size_t trasnactionSize)
 {
-    logger::CategoryPtr logger = logger::Logger::getLogCategory("TEST_DATA_WRITER");
+    logger::CategoryPtr log = logger::Logger::getLogCategory("TEST_DATA_WRITER");
 
     std::default_random_engine generator;
     std::uniform_int_distribution<int16_t> distribution(
@@ -29,36 +29,72 @@ void writeTestData(
         std::numeric_limits<int16_t>::max());
 
     // start a transaction
-    publisher.startTransactionSync();
+    Result res = publisher.startTransactionSync();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(log, "Cannot start transaction");
+        return ;
+    }
 
     for (size_t i = 0; i < countUsers; ++i)
     {
         std::string idStr = std::to_string(i);
-        publisher.publish("my-exchange", "my-key", "user_registered(" + idStr + ",Abuda " + idStr + ")");
+        if (!publisher.publish("my-exchange", "my-key", "user_registered(" + idStr + ",Abuda " + idStr + ")"))
+        {
+            LOG_ERROR(log, "Cannot publish message");
+            return ;
+        }
 
         for (size_t deal = 0; deal < dealsPerUser; ++ deal)
         {
-            publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")");
-            publisher.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")");
+            if (!publisher.publish("my-exchange", "my-key", "user_deal(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")"))
+            {
+                LOG_ERROR(log, "Cannot publish message");
+                return ;
+            }
+            if (!publisher.publish("my-exchange", "my-key", "user_deal_won(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")"))
+            {
+                LOG_ERROR(log, "Cannot publish message");
+                return ;
+            }
         }
-        publisher.publish("my-exchange", "my-key", "user_connected(" + idStr + ")");
+        if (!publisher.publish("my-exchange", "my-key", "user_connected(" + idStr + ")"))
+        {
+            LOG_ERROR(log, "Cannot publish message");
+            return ;
+        }
 
         if (publisher.transactionMessagesCount() >= trasnactionSize)
         {
-            publisher.commitTransactionSync();
+            res = publisher.commitTransactionSync();
+            if (Result::SUCCESS != res)
+            {
+                LOG_ERROR(log, "Cannot commit transaction");
+                return ;
+            }
 
-            LOG_DEBUG(logger, "%zu users were processed", i);
+            LOG_DEBUG(log, "%zu users were processed", i);
 
-            publisher.startTransactionSync();
+            res = publisher.startTransactionSync();
+            if (Result::SUCCESS != res)
+            {
+                LOG_ERROR(log, "Cannot start transaction");
+                return ;
+            }
         }
     }
 
     //publisher.publish("my-exchange", "my-key", "user_connected(10)");
     //publisher.publish("my-exchange", "my-key", "user_disconnected(500)");
 
-    publisher.commitTransactionSync();
+    res = publisher.commitTransactionSync();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(log, "Cannot commit transaction");
+        return ;
+    }
 
-    LOG_INFO(logger, "%zu users were processed", countUsers);
+    LOG_INFO(log, "%zu users were processed", countUsers);
 }
 
 int main(int argc, char* argv[])
@@ -81,7 +117,7 @@ int main(int argc, char* argv[])
         return 3;
     }
 
-    logger::CategoryPtr m_logger = logger::Logger::getLogCategory("MAIN");
+    logger::CategoryPtr log = logger::Logger::getLogCategory("MAIN");
 
     // creating event loop
     rabbitmq::EventLoop eventLoop;
@@ -95,21 +131,42 @@ int main(int argc, char* argv[])
         rabbitmq::ProcessorPtr processor(new rabbitmq::Processor());
         if (!processor->start())
         {
-            LOG_ERROR(m_logger, "Cannot start processor\n");
+            LOG_ERROR(log, "Cannot start processor\n");
             return 3;
         }
 
-        rabbitmq::Consumer consumer(eventLoop, address);
+        rabbitmq::Consumer consumer(eventLoop);
         consumer.attachProcessor(processor);
+        consumer.configure(std::move(address));
+        consumer.initialize();
+        consumer.start();
 
         // use the channel object to call the AMQP method you like
-        consumer.declareExchange("my-exchange", AMQP::fanout);
-        consumer.declareQueue("my-queue");
-        consumer.bindQueue("my-exchange", "my-queue", "my-routing-key");
+        Result res = consumer.declareExchangeSync("my-exchange", AMQP::fanout);
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(log, "Cannot declare exchange");
+            return 3;
+        }
+        res = consumer.declareQueueSync("my-queue");
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(log, "Cannot declare queue");
+            return 3;
+        }
+        res = consumer.bindQueueSync("my-exchange", "my-queue", "my-routing-key");
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(log, "Cannot bind queue");
+            return 3;
+        }
 
         consumer.consume("my-queue");
 
         sleep(50);
+
+        consumer.stop();
+        consumer.deinitialize();
 
         processor->stop();
     }
@@ -132,20 +189,23 @@ int main(int argc, char* argv[])
             transactionSize = std::stoul(argv[4]);
         }
 
-        rabbitmq::Publisher publisher(eventLoop, address);
-
-        publisher.waitChannelReady();
+        // todo: check result
+        rabbitmq::Publisher publisher(eventLoop);
+        publisher.configure(std::move(address));
+        publisher.initialize();
+        publisher.start();
 
         // use the channel object to call the AMQP method you like
-        publisher.declareExchange("my-exchange", AMQP::fanout);
-        publisher.declareQueue("my-queue");
-        publisher.bindQueue("my-exchange", "my-queue", "my-routing-key");
+        publisher.declareExchangeSync("my-exchange", AMQP::fanout);
+        publisher.declareQueueSync("my-queue");
+        publisher.bindQueueSync("my-exchange", "my-queue", "my-routing-key");
 
         writeTestData(publisher, countUsers, dealsPerUser, transactionSize);
 
-        publisher.channel().close();
-
         sleep(5);
+
+        publisher.stop();
+        publisher.deinitialize();
     }
 
     sleep(1);
