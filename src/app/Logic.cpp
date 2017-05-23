@@ -1,3 +1,5 @@
+#include <libconfig.h++>
+
 #include <common/Utils.h>
 #include <logger/LoggerDefines.h>
 #include <app/Logic.h>
@@ -50,8 +52,8 @@ void Logic::loop()
 void Logic::loopFunc()
 {
     db::UserLeaderboards leaderboards;
-    db::Result res = m_storage->getLeaderboards(leaderboards, 10, 1, 1);
-    if (db::Result::SUCCESS != res)
+    Result res = m_storage->getLeaderboards(leaderboards, 10, 1, 1);
+    if (Result::SUCCESS != res)
     {
         LOG_WARN(m_logger, "Cannot get leaderboard");
         return;
@@ -79,13 +81,41 @@ void Logic::loopFunc()
     }
 }
 
-
-Result Logic::configure()
+Result Logic::initialize()
 {
     if (State::CREATED != m_state)
     {
         return Result::INVALID_STATE;
     }
+    m_parser.registerCallbackObject(*this);
+    m_state = State::INITIALIZED;
+    return Result::SUCCESS;
+}
+
+Result Logic::configure(libconfig::Config& cfg)
+{
+    using namespace libconfig;
+
+    if (State::INITIALIZED != m_state)
+    {
+        return Result::INVALID_STATE;
+    }
+
+    m_loopIntervalSeconds = 60;
+    try
+    {
+        Setting& setting = cfg.lookup("application");
+        if (!setting.lookupValue("loop_interval", m_loopIntervalSeconds))
+        {
+            LOG_WARN(m_logger, "Canont find 'loop_interval' parameter in configuration. Default value will be used");
+        }
+    }
+    catch (const SettingNotFoundException& e)
+    {
+        LOG_WARN(m_logger, "Canont find 'application' section in configuration. Default values will be used");
+    }
+    LOG_INFO(m_logger, "Configuration parameters: <loop_interval: %d seconds>", m_loopIntervalSeconds);
+
     m_state = State::CONFIGURED;
     return Result::SUCCESS;
 }
@@ -119,8 +149,8 @@ void Logic::stop()
 // user_registered(id,name)
 Result Logic::onUserRegistered(const int64_t id, const std::string& name)
 {
-    db::Result res = m_storage->storeUser(id, name);
-    if (db::Result::SUCCESS != res)
+    Result res = m_storage->storeUser(id, name);
+    if (Result::SUCCESS != res)
     {
         return Result::FAILED;
     }
@@ -129,8 +159,8 @@ Result Logic::onUserRegistered(const int64_t id, const std::string& name)
 // user_renamed(id,name)
 Result Logic::onUserRenamed(const int64_t id, const std::string& name)
 {
-    db::Result res = m_storage->renameUser(id, name);
-    if (db::Result::SUCCESS != res)
+    Result res = m_storage->renameUser(id, name);
+    if (Result::SUCCESS != res)
     {
         return Result::FAILED;
     }
@@ -139,8 +169,8 @@ Result Logic::onUserRenamed(const int64_t id, const std::string& name)
 // user_deal(id,time,amount)
 Result Logic::onUserDeal(const int64_t id, const std::time_t t, const int64_t amount)
 {
-    db::Result res = m_storage->storeUserDeal(id, t, amount);
-    if (db::Result::SUCCESS != res)
+    Result res = m_storage->storeUserDeal(id, t, amount);
+    if (Result::SUCCESS != res)
     {
         return Result::FAILED;
     }
@@ -149,8 +179,8 @@ Result Logic::onUserDeal(const int64_t id, const std::time_t t, const int64_t am
 // user_deal_won(id,time,amount)
 Result Logic::onUserDealWon(const int64_t id, const std::time_t t, const int64_t amount)
 {
-    db::Result res = m_storage->storeUserDeal(id, t, amount);
-    if (db::Result::SUCCESS != res)
+    Result res = m_storage->storeUserDeal(id, t, amount);
+    if (Result::SUCCESS != res)
     {
         return Result::FAILED;
     }
@@ -159,8 +189,8 @@ Result Logic::onUserDealWon(const int64_t id, const std::time_t t, const int64_t
 // user_connected(id)
 Result Logic::onUserConnected(const int64_t id)
 {
-    db::Result res = m_storage->storeConnectedUser(id);
-    if (db::Result::SUCCESS != res)
+    Result res = m_storage->storeConnectedUser(id);
+    if (Result::SUCCESS != res)
     {
         return Result::FAILED;
     }
@@ -169,12 +199,17 @@ Result Logic::onUserConnected(const int64_t id)
 // user_disconnected(id)
 Result Logic::onUserDisconnected(const int64_t id)
 {
-    db::Result res = m_storage->removeConnectedUser(id);
-    if (db::Result::SUCCESS != res)
+    Result res = m_storage->removeConnectedUser(id);
+    if (Result::SUCCESS != res)
     {
         return Result::FAILED;
     }
     return Result::SUCCESS;
+}
+
+Result Logic::processMessage(rabbitmq::ProcessingItem&& item)
+{
+    return m_parser.parseMessage(std::move(item));
 }
 
 } // namespace app

@@ -1,6 +1,9 @@
 #ifndef MY_RABBIT_MQ_PUBLISHER_IMPL_HPP
 #define MY_RABBIT_MQ_PUBLISHER_IMPL_HPP
 
+#include "../logger/Logger.h"
+#include "../logger/LoggerDefines.h"
+
 namespace rabbitmq
 {
 inline Publisher::Publisher(EventLoop& loop):

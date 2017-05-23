@@ -19,6 +19,8 @@ find_library(LIB_MONGO_CXX mongocxx)
 list(APPEND LIBS ${LIB_MONGO_CXX})
 find_library(LIB_BSON_CXX bsoncxx)
 list(APPEND LIBS ${LIB_BSON_CXX})
+find_library(LIB_CONFIG config++)
+list(APPEND LIBS ${LIB_CONFIG})
 
 foreach (_dir ${SRC_DIRS})
     file(GLOB_RECURSE _src ${_dir}/*.cpp)

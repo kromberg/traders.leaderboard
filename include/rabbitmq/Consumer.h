@@ -1,9 +1,12 @@
 #ifndef MY_RABBIT_MQ_CONSUMER_H
 #define MY_RABBIT_MQ_CONSUMER_H
 
+#include <functional>
+
 #include <amqpcpp.h>
 
 #include "../logger/LoggerFwd.h"
+#include "ProcessingItem.h"
 
 #include "Fwd.h"
 #include "Handler.h"
@@ -14,10 +17,19 @@ namespace rabbitmq
 class Consumer : public Handler
 {
 protected:
-    ProcessorPtr m_processor;
+    typedef std::function<Result(rabbitmq::ProcessingItem&&)> MessageProcessingCallback;
+    MessageProcessingCallback m_messageProcessingCallback;
+
+    std::string m_exchangeName;
+    std::string m_queueName;
+    std::string m_routingKey;
 
 protected:
     void onMessageCallback(const AMQP::Message &message, uint64_t deliveryTag, bool redelivered);
+
+protected:
+    virtual Result customConfigure(libconfig::Config& cfg) override;
+    virtual Result customStart() override;
 
 public:
     Consumer(EventLoop& loop);
@@ -27,7 +39,7 @@ public:
     Consumer& operator=(const Consumer& c) = delete;
     Consumer& operator=(Consumer&& c) = default;
 
-    void attachProcessor(ProcessorPtr& processor);
+    void registerCallback(MessageProcessingCallback&& messageProcessingCallback);
 
     template<class... Args>
     Result consume(Args... args);

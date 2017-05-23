@@ -12,6 +12,11 @@
 #include "EventLoop.h"
 #include "TcpHandler.h"
 
+namespace libconfig
+{
+class Config;
+} // namespace libconfig
+
 namespace rabbitmq
 {
 using common::State;
@@ -34,10 +39,10 @@ protected:
 
 protected:
     virtual Result customInitialize();
-    virtual Result customConfigure();
+    virtual Result customConfigure(libconfig::Config& cfg);
     virtual Result customStart();
-    virtual Result customStop();
-    virtual Result customDeinitialize();
+    virtual void customStop();
+    virtual void customDeinitialize();
 
 public:
     Handler(EventLoop& loop) throw(std::runtime_error);
@@ -47,11 +52,11 @@ public:
     Handler& operator=(const Handler& h) = delete;
     Handler& operator=(Handler&& h) = default;
 
-    Result configure(AMQP::Address&& address);
     Result initialize();
+    Result configure(libconfig::Config& cfg);
     Result start();
-    Result stop();
-    Result deinitialize();
+    void stop();
+    void deinitialize();
 
     AMQP::TcpChannel& channel();
 

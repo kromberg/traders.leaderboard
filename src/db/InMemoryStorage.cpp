@@ -80,7 +80,7 @@ Result InMemoryStorage::storeUserDeal(const int64_t id, const std::time_t t, con
     {
         l.unlock();
         LOG_ERROR(m_logger, "Cannot store user deal <id: %ld, time: %s, amount: %ld>. User is not found",
-            id, ctime(&t), amount);
+            id, common::timeToString(t).c_str(), amount);
         return Result::USER_NOT_FOUND;
     }
 
@@ -96,7 +96,7 @@ Result InMemoryStorage::storeUserDeal(const int64_t id, const std::time_t t, con
     l.unlock();
 
     LOG_DEBUG(m_logger, "User deal was stored <id: %ld, time: %s, amount: %ld>",
-        id, ctime(&t), amount);
+        id, common::timeToString(t).c_str(), amount);
 
     return Result::SUCCESS;
 }

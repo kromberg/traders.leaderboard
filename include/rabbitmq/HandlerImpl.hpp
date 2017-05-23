@@ -1,6 +1,8 @@
 #ifndef MY_RABBIT_MQ_HANDLER_IMPL_HPP
 #define MY_RABBIT_MQ_HANDLER_IMPL_HPP
 
+#include "../logger/Logger.h"
+#include "../logger/LoggerDefines.h"
 #include "Utils.h"
 
 namespace rabbitmq

@@ -10,6 +10,12 @@
 #include "../common/Types.h"
 #include "../logger/LoggerFwd.h"
 #include "../db/Fwd.h"
+#include "MessageParser.h"
+
+namespace libconfig
+{
+class Config;
+} // namespace libconfig
 
 namespace app
 {
@@ -25,6 +31,7 @@ private:
     volatile bool m_loopIsRunning = false;
     std::thread m_loopThread;
 
+    MessageParser m_parser;
     db::StoragePtr m_storage;
 
 private:
@@ -35,7 +42,8 @@ public:
     Logic();
     virtual ~Logic();
 
-    Result configure();
+    Result initialize();
+    Result configure(libconfig::Config& cfg);
     Result start();
     void stop();
 
@@ -51,6 +59,8 @@ public:
     virtual Result onUserConnected(const int64_t id);
     // user_disconnected(id)
     virtual Result onUserDisconnected(const int64_t id);
+
+    Result processMessage(rabbitmq::ProcessingItem&& item);
 };
 } // namespace app
 

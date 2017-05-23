@@ -3,6 +3,9 @@
 
 #include <functional>
 
+#include "../logger/Logger.h"
+#include "../logger/LoggerDefines.h"
+
 namespace rabbitmq
 {
 inline Consumer::Consumer(EventLoop& loop):
@@ -11,9 +14,9 @@ inline Consumer::Consumer(EventLoop& loop):
     m_logger = logger::Logger::getLogCategory("RMQ_CONSUMER");
 }
 
-inline void Consumer::attachProcessor(ProcessorPtr& processor)
+inline void Consumer::registerCallback(MessageProcessingCallback&& messageProcessingCallback)
 {
-    atomic_store(&m_processor, processor);
+    m_messageProcessingCallback = messageProcessingCallback;
 }
 
 template<class... Args>

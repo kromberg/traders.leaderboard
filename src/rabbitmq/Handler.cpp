@@ -1,3 +1,5 @@
+#include <libconfig.h++>
+
 #include <logger/Logger.h>
 #include <logger/LoggerDefines.h>
 #include <rabbitmq/Handler.h>
@@ -5,32 +7,9 @@
 namespace rabbitmq
 {
 
-Result Handler::configure(AMQP::Address&& address)
-{
-    if (State::CREATED != m_state)
-    {
-        LOG_ERROR(m_logger, "Cannot configure Handler in state %d(%s)",
-            static_cast<int32_t>(m_state), common::stateToStr(m_state));
-        return Result::INVALID_STATE;
-    }
-    Result res = Result::SUCCESS;
-
-    m_address.reset(new AMQP::Address(std::move(address)));
-
-    res = customConfigure();
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Custom configuration was failed with result %d(%s)",
-            static_cast<int32_t>(res), resultToStr(res));
-        return res;
-    }
-    m_state = State::CONFIGURED;
-    return Result::SUCCESS;
-}
-
 Result Handler::initialize()
 {
-    if (State::CONFIGURED != m_state)
+    if (State::CREATED != m_state)
     {
         LOG_ERROR(m_logger, "Cannot initialize Handler in state %d(%s)",
             static_cast<int32_t>(m_state), common::stateToStr(m_state));
@@ -50,9 +29,49 @@ Result Handler::initialize()
     return Result::SUCCESS;
 }
 
+Result Handler::configure(libconfig::Config& cfg)
+{
+    using namespace libconfig;
+
+    if (State::INITIALIZED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot configure Handler in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+    Result res = Result::SUCCESS;
+
+    std::string addressString("amqp://guest:guest@localhost:5672/");
+    try
+    {
+        Setting& setting = cfg.lookup("rabbitmq");
+        if (!setting.lookupValue("address", addressString))
+        {
+            LOG_WARN(m_logger, "Canont find 'address' parameter in configuration. Default value will be used");
+        }
+    }
+    catch (const SettingNotFoundException& e)
+    {
+        LOG_WARN(m_logger, "Canont find 'rabbitmq' section in configuration. Default values will be used");
+    }
+    LOG_INFO(m_logger, "Configuration parameters: <address: %s>", addressString.c_str());
+
+    m_address.reset(new AMQP::Address(addressString));
+
+    res = customConfigure(cfg);
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Custom configuration was failed with result %d(%s)",
+            static_cast<int32_t>(res), resultToStr(res));
+        return res;
+    }
+    m_state = State::CONFIGURED;
+    return Result::SUCCESS;
+}
+
 Result Handler::start()
 {
-    if (State::INITIALIZED != m_state)
+    if (State::CONFIGURED != m_state)
     {
         LOG_ERROR(m_logger, "Cannot start Handler in state %d(%s)",
             static_cast<int32_t>(m_state), common::stateToStr(m_state));
@@ -97,52 +116,34 @@ Result Handler::start()
     return Result::SUCCESS;
 }
 
-Result Handler::stop()
+void Handler::stop()
 {
     if (State::STARTED != m_state)
     {
-        LOG_ERROR(m_logger, "Cannot stop Handler in state %d(%s)",
-            static_cast<int32_t>(m_state), common::stateToStr(m_state));
-        return Result::INVALID_STATE;
+        return ;
     }
+
+    customStop();
 
     m_channel->close();
     m_channel.reset();
     m_connection.reset();
 
-    Result res = Result::SUCCESS;
-
-    res = customStart();
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Custom stop was failed with result %d(%s)",
-            static_cast<int32_t>(res), resultToStr(res));
-        return res;
-    }
     m_state = State::STOPPED;
-    return Result::SUCCESS;
+    return ;
 }
 
-Result Handler::deinitialize()
+void Handler::deinitialize()
 {
     if (State::STOPPED != m_state)
     {
-        LOG_ERROR(m_logger, "Cannot DEinitialize Handler in state %d(%s)",
-            static_cast<int32_t>(m_state), common::stateToStr(m_state));
-        return Result::INVALID_STATE;
+        return ;
     }
 
-    Result res = Result::SUCCESS;
+    customDeinitialize();
 
-    res = customDeinitialize();
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Custom deinitialize was failed with result %d(%s)",
-            static_cast<int32_t>(res), resultToStr(res));
-        return res;
-    }
-    m_state = State::STOPPED;
-    return Result::SUCCESS;
+    m_state = State::DEINITIALIZED;
+    return ;
 }
 
 Result Handler::customInitialize()
@@ -150,7 +151,7 @@ Result Handler::customInitialize()
     return Result::SUCCESS;
 }
 
-Result Handler::customConfigure()
+Result Handler::customConfigure(libconfig::Config&)
 {
     return Result::SUCCESS;
 }
@@ -160,14 +161,14 @@ Result Handler::customStart()
     return Result::SUCCESS;
 }
 
-Result Handler::customStop()
+void Handler::customStop()
 {
-    return Result::SUCCESS;
+    return ;
 }
 
-Result Handler::customDeinitialize()
+void Handler::customDeinitialize()
 {
-    return Result::SUCCESS;
+    return ;
 }
 
 } // namespace rabbitmq

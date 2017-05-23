@@ -6,8 +6,8 @@ namespace common
 enum class State
 {
     CREATED,
-    CONFIGURED,
     INITIALIZED,
+    CONFIGURED,
     STARTED,
     STOPPED,
     DEINITIALIZED,
@@ -17,6 +17,8 @@ enum class Result
 {
     SUCCESS,
     FAILED,
+    CFG_FILE_ERROR,
+    CFG_PARSE_ERROR,
     USER_ALREADY_REG,
     USER_REG_ERROR,
     USER_CONN_ERROR,
@@ -28,6 +30,8 @@ enum class Result
     NULL_CHANNEL,
     CMD_NOT_SUPPORTED,
     DB_ERROR,
+    LOGIC_ERROR,
+    CB_NOT_FOUND,
 };
 
 const char* stateToStr(const State s);

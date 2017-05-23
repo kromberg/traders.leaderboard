@@ -29,6 +29,10 @@ const char* resultToStr(const Result r)
             return "SUCCESS";
         case Result::FAILED:
             return "FAILED";
+        case Result::CFG_FILE_ERROR:
+            return "CONFIGURATION FILE ERROR";
+        case Result::CFG_PARSE_ERROR:
+            return "COULD NOT PARSE CONFIGURATION FILE";
         case Result::USER_ALREADY_REG:
             return "USER ALREADY REGISTERED";
         case Result::USER_REG_ERROR:
@@ -51,6 +55,10 @@ const char* resultToStr(const Result r)
             return "COMMAND IS NOT SUPPORTED";
         case Result::DB_ERROR:
             return "DB ERROR";
+        case Result::LOGIC_ERROR:
+            return "LOGIC ERROR";
+        case Result::CB_NOT_FOUND:
+            return "CALLBACK NOT FOUND";
     }
     return "UNKNOWN";
 }
