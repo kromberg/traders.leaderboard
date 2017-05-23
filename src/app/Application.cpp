@@ -131,7 +131,15 @@ Result Application::start()
 
     m_eventLoop.start();
 
-    Result res = m_consumer->start();
+    Result res = m_logic.start();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Cannot start logic. Result: %d(%s)",
+            static_cast<int32_t>(res), common::resultToStr(res));
+        return res;
+    }
+
+    res = m_consumer->start();
     if (Result::SUCCESS != res)
     {
         LOG_ERROR(m_logger, "Cannot start consumer. Result: %d(%s)",
@@ -143,14 +151,6 @@ Result Application::start()
     if (Result::SUCCESS != res)
     {
         LOG_ERROR(m_logger, "Cannot start publisher. Result: %d(%s)",
-            static_cast<int32_t>(res), common::resultToStr(res));
-        return res;
-    }
-
-    res = m_logic.start();
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot start logic. Result: %d(%s)",
             static_cast<int32_t>(res), common::resultToStr(res));
         return res;
     }

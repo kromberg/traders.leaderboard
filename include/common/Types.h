@@ -33,6 +33,7 @@ enum class Result
     DB_ERROR,
     LOGIC_ERROR,
     CB_NOT_FOUND,
+    STORAGE_ERROR,
 };
 
 const char* stateToStr(const State s);

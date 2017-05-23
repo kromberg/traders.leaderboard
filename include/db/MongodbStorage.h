@@ -7,22 +7,31 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
+#include <mutex>
 
-#include <mongocxx/client.hpp>
+#include <mongocxx/pool.hpp>
 
 #include "../logger/LoggerFwd.h"
-
+#include "../common/Types.h"
 #include "Storage.h"
 
 namespace db
 {
+using common::State;
+using common::Result;
+
 class MongodbStorage : public Storage
 {
 private:
-    mongocxx::client m_client;
-    mongocxx::database m_db;
-    mutable mongocxx::collection m_collection;
-    mutable mongocxx::collection m_connectedUsersCollection;
+    State m_state = State::CREATED;
+
+    std::string m_uri;
+    std::string m_dbName;
+    std::string m_usersCollectionName;
+    std::string m_connectedUsersCollectionName;
+
+    mutable std::unique_ptr<mongocxx::pool> m_pool;
+    mutable std::mutex m_poolGuard;
 
     logger::CategoryPtr m_logger;
 
@@ -32,6 +41,9 @@ private:
 public:
     MongodbStorage();
     virtual ~MongodbStorage() = default;
+
+    virtual Result configure(libconfig::Config& cfg) override;
+    virtual Result start() override;
 
     virtual Result storeUser(const int64_t id, const std::string& name) override;
     virtual Result renameUser(const int64_t id, const std::string& name) override;

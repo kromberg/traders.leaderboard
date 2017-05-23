@@ -1,7 +1,11 @@
 #include <queue>
 
+#include <libconfig.h++>
+
 #include <bsoncxx/json.hpp>
 #include <bsoncxx/exception/exception.hpp>
+
+#include <mongocxx/client.hpp>
 #include <mongocxx/stdx.hpp>
 #include <mongocxx/uri.hpp>
 #include <mongocxx/instance.hpp>
@@ -15,6 +19,15 @@
 namespace db
 {
 
+#define GET_COLLECTION(collectionName) \
+    mongocxx::pool::entry client; \
+    { \
+        std::unique_lock<std::mutex> l(m_poolGuard); \
+        client = m_pool->acquire(); \
+    } \
+    mongocxx::database database = (*client)[m_dbName]; \
+    mongocxx::collection collection = database[collectionName]
+
 using bsoncxx::builder::stream::close_array;
 using bsoncxx::builder::stream::close_document;
 using bsoncxx::builder::stream::document;
@@ -24,23 +37,94 @@ using bsoncxx::builder::stream::open_document;
 
 MongodbStorage::MongodbStorage()
 {
-    mongocxx::instance instance{}; // This should be done only once.
-    mongocxx::uri uri("mongodb://localhost:27017");
-    m_client = mongocxx::client(uri);
-    m_db = m_client["db"];
-    m_collection = m_db["test"];
-    m_connectedUsersCollection = m_db["connected_users"];
-
     m_logger = logger::Logger::getLogCategory("DB_MONGO");
+}
+
+Result MongodbStorage::configure(libconfig::Config& cfg)
+{
+    using namespace libconfig;
+
+    if (State::CREATED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot configure storage in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    m_uri = "mongodb://localhost:27017";
+    m_dbName = "leaderboard_db";
+    m_usersCollectionName = "users";
+    m_connectedUsersCollectionName = "connected_users";
+    try
+    {
+        Setting& setting = cfg.lookup("db");
+        if (!setting.lookupValue("address", m_uri))
+        {
+            LOG_WARN(m_logger, "Canont find 'address' parameter in configuration. Default value will be used");
+        }
+        if (!setting.lookupValue("db_name", m_dbName))
+        {
+            LOG_WARN(m_logger, "Canont find 'db_name' parameter in configuration. Default value will be used");
+        }
+        if (!setting.lookupValue("users_collection_name", m_usersCollectionName))
+        {
+            LOG_WARN(m_logger, "Canont find 'users_collection_name' parameter in configuration. Default value will be used");
+        }
+        if (!setting.lookupValue("connected_users_collection_name", m_connectedUsersCollectionName))
+        {
+            LOG_WARN(m_logger, "Canont find 'connected_users_collection_name' parameter in configuration. Default value will be used");
+        }
+    }
+    catch (const SettingNotFoundException& e)
+    {
+        LOG_WARN(m_logger, "Canont find 'db' section in configuration. Default values will be used");
+    }
+
+    LOG_INFO(m_logger, "Configuration parameters: <uri: %s, db_name: %s, "
+        "users_collection_name: %s, connected_users_collection_name: %s>",
+        m_uri.c_str(), m_dbName.c_str(), m_usersCollectionName.c_str(), m_connectedUsersCollectionName.c_str());
+
+    m_state = State::CONFIGURED;
+    return Result::SUCCESS;
+}
+
+Result MongodbStorage::start()
+{
+    if (State::CONFIGURED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot start storage in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    // this should be called only once
+    static mongocxx::instance instance{};
+
+    // create collections
+    mongocxx::uri uri(m_uri);
+    try
+    {
+        m_pool.reset(new mongocxx::pool(uri));
+    }
+    catch (const mongocxx::exception& e)
+    {
+        LOG_ERROR(m_logger, "Cannot create MongoDB client, exception was thrown %s", e.what());
+        return Result::DB_ERROR;
+    }
+
+    m_state = State::STARTED;
+    return Result::SUCCESS;
 }
 
 Result MongodbStorage::storeUser(const int64_t id, const std::string& name)
 {
+    GET_COLLECTION(m_usersCollectionName);
+
     mongocxx::stdx::optional<mongocxx::result::insert_one> result;
     try
     {
         result =
-            m_collection.insert_one(
+            collection.insert_one(
                 document{} <<
                 "_id" << id <<
                 "id" << id <<
@@ -67,11 +151,13 @@ Result MongodbStorage::storeUser(const int64_t id, const std::string& name)
 
 Result MongodbStorage::renameUser(const int64_t id, const std::string& name)
 {
+    GET_COLLECTION(m_usersCollectionName);
+
     mongocxx::stdx::optional<mongocxx::result::update> updateResult;
     try
     {
         updateResult = 
-            m_collection.update_one(
+            collection.update_one(
                 document{} << "id" << id << finalize,
                 document{} << "$set" <<
                 open_document <<
@@ -106,10 +192,12 @@ Result MongodbStorage::storeUserDeal(const int64_t id, const std::time_t t, cons
 {
     using std::chrono::system_clock;
 
+    GET_COLLECTION(m_usersCollectionName);
+
     mongocxx::stdx::optional<bsoncxx::document::value> userRes;
     try
     {
-        userRes = m_collection.find_one(document{} << "id" << id << finalize);
+        userRes = collection.find_one(document{} << "id" << id << finalize);
     }
     catch (const mongocxx::query_exception& e)
     {
@@ -133,7 +221,7 @@ Result MongodbStorage::storeUserDeal(const int64_t id, const std::time_t t, cons
     try
     {
         updateResult = 
-            m_collection.update_one(
+            collection.update_one(
                 document{} <<
                 "id" << id << 
                 "scores.time" << bsoncxx::types::b_date(tp) <<
@@ -172,7 +260,7 @@ Result MongodbStorage::storeUserDeal(const int64_t id, const std::time_t t, cons
         try
         {
             addResult =
-                m_collection.update_one(
+                collection.update_one(
                     document{} <<
                     "id" << id << 
                     finalize,
@@ -210,11 +298,13 @@ Result MongodbStorage::storeUserDeal(const int64_t id, const std::time_t t, cons
 
 Result MongodbStorage::storeConnectedUser(const int64_t id)
 {
+    GET_COLLECTION(m_connectedUsersCollectionName);
+
     mongocxx::stdx::optional<mongocxx::result::insert_one> result;
     try
     {
         result =
-            m_connectedUsersCollection.insert_one(
+            collection.insert_one(
                 document{} <<
                 "_id" << id <<
                 "id" << id <<
@@ -238,11 +328,13 @@ Result MongodbStorage::storeConnectedUser(const int64_t id)
 
 Result MongodbStorage::removeConnectedUser(const int64_t id)
 {
+    GET_COLLECTION(m_connectedUsersCollectionName);
+
     mongocxx::stdx::optional<mongocxx::result::delete_result> result;
     try
     {
         result =
-            m_connectedUsersCollection.delete_one(
+            collection.delete_one(
                 document{} <<
                 "id" << id <<
                 finalize);
@@ -270,8 +362,10 @@ Result MongodbStorage::removeConnectedUser(const int64_t id)
 
 std::unordered_set<int64_t> MongodbStorage::getConnectedUsers() const
 {
+    GET_COLLECTION(m_connectedUsersCollectionName);
+
     mongocxx::cursor cursor =
-        m_connectedUsersCollection.find(
+        collection.find(
             document{} <<
             finalize);
 
@@ -307,7 +401,7 @@ std::unordered_set<int64_t> MongodbStorage::getConnectedUsers() const
     }
     catch (const mongocxx::query_exception& e)
     {
-        LOG_WARN(m_logger, "Cannot retreive connected users");
+        LOG_ERROR(m_logger, "Cannot retreive connected users, exception was thrown %s", e.what());
         return result;
     }
     if (badDocuments > 0)
@@ -321,10 +415,12 @@ std::unordered_set<int64_t> MongodbStorage::getConnectedUsers() const
 
 Result MongodbStorage::getUser(User& user, const int64_t id) const
 {
+    GET_COLLECTION(m_usersCollectionName);
+
     mongocxx::stdx::optional<bsoncxx::document::value> userRes;
     try
     {
-        userRes = m_collection.find_one(document{} << "id" << id << finalize);
+        userRes = collection.find_one(document{} << "id" << id << finalize);
     }
     catch (const mongocxx::query_exception& e)
     {
@@ -385,6 +481,7 @@ Result MongodbStorage::getLeaderboards(
     // last week
     system_clock::time_point tp = system_clock::now() - duration_days(7);
 
+    GET_COLLECTION(m_usersCollectionName);
     mongocxx::pipeline pipeline;
     pipeline
         .unwind("$scores")
@@ -411,7 +508,7 @@ Result MongodbStorage::getLeaderboards(
             document{} <<
             "weeklyScore" << -1 <<
             finalize);
-    mongocxx::cursor cursor = m_collection.aggregate(pipeline);
+    mongocxx::cursor cursor = collection.aggregate(pipeline);
 
     Leaderboard tmpLeaderboard;
     Leaderboard currentLeaderboard;
@@ -527,7 +624,7 @@ Result MongodbStorage::getLeaderboards(
     }
     catch (const mongocxx::query_exception& e)
     {
-        LOG_WARN(m_logger, "Cannot get leaderboard from DB");
+        LOG_ERROR(m_logger, "Cannot get leaderboard from DB, exception was thrown %s", e.what());
         return Result::DB_ERROR;
     }
     if (badDocuments > 0)

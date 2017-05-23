@@ -25,6 +25,32 @@ InMemoryStorage::InMemoryStorage()
     m_logger = logger::Logger::getLogCategory("DB_IN_MEM");
 }
 
+Result InMemoryStorage::configure(libconfig::Config& cfg)
+{
+    if (State::CREATED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot configure storage in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    m_state = State::CONFIGURED;
+    return Result::SUCCESS;
+}
+
+Result InMemoryStorage::start()
+{
+    if (State::CONFIGURED != m_state)
+    {
+        LOG_ERROR(m_logger, "Cannot start storage in state %d(%s)",
+            static_cast<int32_t>(m_state), common::stateToStr(m_state));
+        return Result::INVALID_STATE;
+    }
+
+    m_state = State::STARTED;
+    return Result::SUCCESS;
+}
+
 Result InMemoryStorage::storeUser(const int64_t id, const std::string& name)
 {
     std::unique_lock<std::mutex> l(m_usersMapGuard);

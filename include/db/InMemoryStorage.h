@@ -10,14 +10,16 @@
 #include <queue>
 
 #include "../logger/LoggerFwd.h"
-
+#include "../common/Types.h"
 #include "Storage.h"
 
 namespace db
 {
+using common::State;
+using common::Result;
+
 class InMemoryStorage : public Storage
 {
-
 private:
     struct UserStorage
     {
@@ -38,6 +40,8 @@ private:
     typedef std::unordered_set<int64_t> ConnectedUsersStorage;
 
 private:
+    State m_state = State::CREATED;
+
     UsersStorage m_users;
     mutable std::mutex m_usersMapGuard;
     ConnectedUsersStorage m_connectedUsers;
@@ -48,6 +52,9 @@ private:
 public:
     InMemoryStorage();
     virtual ~InMemoryStorage() = default;
+
+    virtual Result configure(libconfig::Config& cfg) override;
+    virtual Result start() override;
 
     virtual Result storeUser(const int64_t id, const std::string& name) override;
     virtual Result renameUser(const int64_t id, const std::string& name) override;

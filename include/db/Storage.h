@@ -9,6 +9,11 @@
 #include "../common/Types.h"
 #include "Fwd.h"
 
+namespace libconfig
+{
+class Config;
+} // namespace libconfig
+
 namespace db
 {
 using common::State;
@@ -33,11 +38,22 @@ typedef std::unordered_map<int64_t, Leaderboard> Leaderboards;
 
 class Storage
 {
-private:
+public:
+    enum class Type
+    {
+        IN_MEMORY,
+        MONGODB,
+        UNKNOWN,
+    };
+    static Type typeFromString(const std::string& typeStr);
+    static const char* typeToString(const Type t);
 
 public:
     Storage() = default;
     virtual ~Storage() = default;
+
+    virtual Result configure(libconfig::Config& cfg) = 0;
+    virtual Result start() = 0;
 
     virtual Result storeUser(const int64_t id, const std::string& name) = 0;
     virtual Result renameUser(const int64_t id, const std::string& name) = 0;
@@ -54,6 +70,43 @@ public:
         const uint64_t before = 10,
         const uint64_t after = 10) const = 0;
 };
+
+inline Storage::Type Storage::typeFromString(const std::string& tmpTypeStr)
+{
+    static const std::unordered_map<std::string, Type> stringToTypeMap =
+    {
+        {"inmemory",    Type::IN_MEMORY},
+        {"in-memory",   Type::IN_MEMORY},
+        {"in-memory",   Type::IN_MEMORY},
+        {"mongo",       Type::MONGODB},
+        {"mongodb",     Type::MONGODB},
+        {"mongo_db",    Type::MONGODB},
+        {"mongo-db",    Type::MONGODB},
+    };
+    std::string typeStr;
+    std::transform(tmpTypeStr.begin(), tmpTypeStr.end(), std::back_inserter(typeStr), ::tolower);
+
+    auto it = stringToTypeMap.find(typeStr);
+    if (stringToTypeMap.end() == it)
+    {
+        return Type::UNKNOWN;
+    }
+    return it->second;
+}
+
+inline const char* Storage::typeToString(const Type t)
+{
+    switch (t)
+    {
+        case Type::IN_MEMORY:
+            return "IN MEMORY";
+        case Type::MONGODB:
+            return "MONGODB";
+        case Type::UNKNOWN:
+            return "UNKNOWN";
+    }
+    return "UNKNOWN";
+}
 } // namespace db
 
 #endif // DB_STORAGE_H

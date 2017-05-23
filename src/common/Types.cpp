@@ -61,6 +61,8 @@ const char* resultToStr(const Result r)
             return "LOGIC ERROR";
         case Result::CB_NOT_FOUND:
             return "CALLBACK NOT FOUND";
+        case Result::STORAGE_ERROR:
+            return "STORAGE ERROR";
     }
     return "UNKNOWN";
 }

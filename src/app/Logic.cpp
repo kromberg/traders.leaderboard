@@ -9,8 +9,7 @@
 namespace app
 {
 
-Logic::Logic():
-    m_storage(new db::MongodbStorage())
+Logic::Logic()
 {
     m_logger = logger::Logger::getLogCategory("APP_LOGIC");
 }
@@ -116,6 +115,46 @@ Result Logic::configure(libconfig::Config& cfg)
     }
     LOG_INFO(m_logger, "Configuration parameters: <loop_interval: %d seconds>", m_loopIntervalSeconds);
 
+    std::string storageTypeStr = "mongo";
+    try
+    {
+        Setting& setting = cfg.lookup("db");
+        if (!setting.lookupValue("type", storageTypeStr))
+        {
+            LOG_WARN(m_logger, "Canont find 'db.type' parameter in configuration. Default value will be used");
+        }
+    }
+    catch (const SettingNotFoundException& e)
+    {
+        LOG_WARN(m_logger, "Canont find 'db' section in configuration. Default values will be used");
+    }
+    db::Storage::Type storageType = db::Storage::typeFromString(storageTypeStr);
+    LOG_INFO(m_logger, "Configuration parameters: <db.type: %s -> %d(%s)>",
+        storageTypeStr.c_str(), static_cast<int32_t>(storageType), db::Storage::typeToString(storageType));
+
+    switch (storageType)
+    {
+        case db::Storage::Type::IN_MEMORY:
+            m_storage.reset(new db::InMemoryStorage());
+            break;
+        case db::Storage::Type::MONGODB:
+            m_storage.reset(new db::MongodbStorage());
+            break;
+        case db::Storage::Type::UNKNOWN:
+        default:
+            break;
+    }
+    if (!m_storage)
+    {
+        LOG_ERROR(m_logger, "Cannot create storage");
+        return Result::STORAGE_ERROR;
+    }
+    Result res = m_storage->configure(cfg);
+    if (Result::SUCCESS != res)
+    {
+        return res;
+    }
+
     m_state = State::CONFIGURED;
     return Result::SUCCESS;
 }
@@ -128,6 +167,13 @@ Result Logic::start()
     {
         return Result::INVALID_STATE;
     }
+
+    Result res = m_storage->start();
+    if (Result::SUCCESS != res)
+    {
+        return res;
+    }
+
     m_loopIsRunning = true;
     std::thread loopThread(&Logic::loop, this);
     swap(loopThread, m_loopThread);
