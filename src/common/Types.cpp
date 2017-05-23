@@ -33,6 +33,8 @@ const char* resultToStr(const Result r)
             return "CONFIGURATION FILE ERROR";
         case Result::CFG_PARSE_ERROR:
             return "COULD NOT PARSE CONFIGURATION FILE";
+        case Result::CFG_INVALID:
+            return "CONFIGUATION IS INVALID";
         case Result::USER_ALREADY_REG:
             return "USER ALREADY REGISTERED";
         case Result::USER_REG_ERROR:

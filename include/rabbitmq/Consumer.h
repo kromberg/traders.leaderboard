@@ -20,10 +20,6 @@ protected:
     typedef std::function<Result(rabbitmq::ProcessingItem&&)> MessageProcessingCallback;
     MessageProcessingCallback m_messageProcessingCallback;
 
-    std::string m_exchangeName;
-    std::string m_queueName;
-    std::string m_routingKey;
-
 protected:
     void onMessageCallback(const AMQP::Message &message, uint64_t deliveryTag, bool redelivered);
 

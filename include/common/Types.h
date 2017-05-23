@@ -19,6 +19,7 @@ enum class Result
     FAILED,
     CFG_FILE_ERROR,
     CFG_PARSE_ERROR,
+    CFG_INVALID,
     USER_ALREADY_REG,
     USER_REG_ERROR,
     USER_CONN_ERROR,

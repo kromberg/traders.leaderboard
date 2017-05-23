@@ -15,6 +15,7 @@
 namespace libconfig
 {
 class Config;
+class Setting;
 } // namespace libconfig
 
 namespace rabbitmq
@@ -38,6 +39,12 @@ protected:
     logger::CategoryPtr m_logger;
 
 protected:
+    std::string m_exchangeName;
+    std::string m_queueName;
+    std::string m_routingKey;
+
+protected:
+    Result readRabbitMqParameters(libconfig::Setting& setting);
     virtual Result customInitialize();
     virtual Result customConfigure(libconfig::Config& cfg);
     virtual Result customStart();

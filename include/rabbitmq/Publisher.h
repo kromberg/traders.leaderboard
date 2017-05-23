@@ -22,6 +22,9 @@ class Publisher : public Handler
 private:
     size_t m_transactionMessagesCount = 0;
 
+protected:
+    virtual Result customConfigure(libconfig::Config& cfg) override;
+
 public:
     Publisher(EventLoop& loop);
     virtual ~Publisher() = default;
