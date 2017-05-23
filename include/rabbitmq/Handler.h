@@ -66,6 +66,7 @@ public:
     void deinitialize();
 
     AMQP::TcpChannel& channel();
+    AMQP::TcpChannel* channelPtr();
 
     template<class... Args>
     Result declareExchangeSync(Args... args);

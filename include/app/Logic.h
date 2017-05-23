@@ -31,6 +31,7 @@ private:
     volatile bool m_loopIsRunning = false;
     std::thread m_loopThread;
 
+    rabbitmq::PublisherPtr m_publisher;
     MessageParser m_parser;
     db::StoragePtr m_storage;
 
@@ -46,6 +47,8 @@ public:
     Result configure(libconfig::Config& cfg);
     Result start();
     void stop();
+
+    void registerPublisher(rabbitmq::PublisherPtr publisher);
 
     // user_registered(id,name)
     virtual Result onUserRegistered(const int64_t id, const std::string& name);

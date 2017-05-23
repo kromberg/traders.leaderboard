@@ -10,9 +10,9 @@ class TcpHandler;
 class Handler;
 typedef std::shared_ptr<Handler> HandlerPtr;
 class Consumer;
-typedef std::unique_ptr<Consumer> ConsumerPtr;
+typedef std::shared_ptr<Consumer> ConsumerPtr;
 class Publisher;
-typedef std::unique_ptr<Publisher> PublisherPtr;
+typedef std::shared_ptr<Publisher> PublisherPtr;
 class Processor;
 typedef std::shared_ptr<Processor> ProcessorPtr;
 

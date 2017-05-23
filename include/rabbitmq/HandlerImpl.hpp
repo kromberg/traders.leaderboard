@@ -20,6 +20,11 @@ inline AMQP::TcpChannel& Handler::channel()
     return *m_channel;
 }
 
+inline AMQP::TcpChannel* Handler::channelPtr()
+{
+    return m_channel.get();
+}
+
 template<class... Args>
 inline Result Handler::declareExchangeSync(Args... args)
 {

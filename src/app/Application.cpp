@@ -58,6 +58,7 @@ Result Application::initialize()
             static_cast<int32_t>(res), common::resultToStr(res));
         return res;
     }
+    m_logic.registerPublisher(m_publisher);
 
     m_consumer->registerCallback(std::bind(&Logic::processMessage, std::ref(m_logic), _1));
 

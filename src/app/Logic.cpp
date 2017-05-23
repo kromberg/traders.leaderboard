@@ -5,6 +5,7 @@
 #include <app/Logic.h>
 #include <db/InMemoryStorage.h>
 #include <db/MongodbStorage.h>
+#include <rabbitmq/Publisher.h>
 
 namespace app
 {
@@ -17,6 +18,11 @@ Logic::Logic()
 Logic::~Logic()
 {
     stop();
+}
+
+void Logic::registerPublisher(rabbitmq::PublisherPtr publisher)
+{
+    std::atomic_store(&m_publisher, publisher);
 }
 
 void Logic::loop()
@@ -50,6 +56,12 @@ void Logic::loop()
 
 void Logic::loopFunc()
 {
+    if (!m_publisher || !m_publisher->channelPtr())
+    {
+        LOG_WARN(m_logger, "Do not calculate leaderboard since publisher is missing or not readys");
+        return ;
+    }
+
     db::UserLeaderboards leaderboards;
     Result res = m_storage->getLeaderboards(leaderboards, 10, 1, 1);
     if (Result::SUCCESS != res)
@@ -58,25 +70,58 @@ void Logic::loopFunc()
         return;
     }
 
-    LOG_DEBUG(m_logger, "Leaderboard:");
-    for (auto&& scoreUser : leaderboards[-1])
-    {
-        LOG_DEBUG(m_logger, "\t%015ld -> <%ld, %s>",
-            scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
-    }
+    std::string message;
+    message += "leaderboards:[";
 
     for (auto&& userLb : leaderboards)
     {
-        if (-1 == userLb.first)
-        {
-            continue;
-        }
+        message += "{\"id\":";
+        message += std::to_string(userLb.first);
+        message += ",";
+
         LOG_DEBUG(m_logger, "User %ld leaderboard:", userLb.first);
         for (auto&& scoreUser : userLb.second)
         {
             LOG_DEBUG(m_logger, "\t%015ld -> <%ld, %s>",
                 scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
+            message += "\"user\":{";
+            message += "\"id\":";
+            message += std::to_string(scoreUser.second.m_id);
+            message += ",";
+            message += "\"name\":";
+            message += "\"";
+            message += scoreUser.second.m_name;
+            message += "\"";
+            message += ",";
+            message += "\"score\":";
+            message += std::to_string(scoreUser.first);
+            message += "},";
         }
+        message.pop_back();
+        message += "},";
+    }
+    message.pop_back();
+    message += "]";
+
+    // start a transaction
+    res = m_publisher->startTransactionSync();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Cannot start transaction");
+        return ;
+    }
+
+    if (!m_publisher->publish(message))
+    {
+        LOG_ERROR(m_logger, "Cannot publish message");
+        return ;
+    }
+
+    res = m_publisher->commitTransactionSync();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Cannot commit transaction");
+        return ;
     }
 }
 

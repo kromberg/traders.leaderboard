@@ -38,6 +38,9 @@ public:
 
     size_t transactionMessagesCount() const;
 
+    template<class T>
+    bool publish(T&& message);
+
     template<class... Args>
     bool publish(Args... args);
 };
