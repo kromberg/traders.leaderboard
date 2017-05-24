@@ -10,6 +10,7 @@
 #include "../common/Types.h"
 #include "../logger/LoggerFwd.h"
 #include "../db/Fwd.h"
+#include "Configuration.h"
 #include "MessageParser.h"
 
 namespace libconfig
@@ -32,12 +33,14 @@ private:
     std::thread m_loopThread;
 
     rabbitmq::PublisherPtr m_publisher;
+    RmqHandlerCfg m_publisherCfg;
+
     MessageParser m_parser;
     db::StoragePtr m_storage;
 
 private:
     void loop();
-    void loopFunc();
+    void loopFunc(const time_t startTime);
 
 public:
     Logic();
@@ -48,7 +51,7 @@ public:
     Result start();
     void stop();
 
-    void registerPublisher(rabbitmq::PublisherPtr publisher);
+    void registerPublisher(rabbitmq::PublisherPtr publisher, const RmqHandlerCfg& cfg);
 
     // user_registered(id,name)
     virtual Result onUserRegistered(const int64_t id, const std::string& name);

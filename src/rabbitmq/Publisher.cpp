@@ -7,32 +7,6 @@
 namespace rabbitmq
 {
 
-Result Publisher::customConfigure(libconfig::Config& cfg)
-{
-    using namespace libconfig;
-
-    m_exchangeName = "leaderboard";
-    m_queueName = "leaderboard";
-    m_routingKey = "routing-key";
-    try
-    {
-        Setting& setting = cfg.lookup("rabbitmq.publisher");
-        Result res = readRabbitMqParameters(setting);
-        if (Result::SUCCESS != res)
-        {
-            return res;
-        }
-    }
-    catch (const SettingNotFoundException& e)
-    {
-        LOG_WARN(m_logger, "Canont find 'rabbitmq' section in configuration. Default values will be used");
-    }
-    LOG_INFO(m_logger, "Configuration parameters: <exchange: %s, queue: %s, key: %s>",
-        m_exchangeName.c_str(), m_queueName.c_str(), m_routingKey.c_str());
-
-    return Result::SUCCESS;
-}
-
 Result Publisher::startTransactionSync()
 {
     m_transactionMessagesCount = 0;

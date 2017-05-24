@@ -7,46 +7,6 @@
 namespace rabbitmq
 {
 
-Result Consumer::customConfigure(libconfig::Config& cfg)
-{
-    using namespace libconfig;
-
-    m_exchangeName = "leaderboard";
-    m_queueName = "users-events-queue";
-    m_routingKey = "routing-key";
-    try
-    {
-        Setting& setting = cfg.lookup("rabbitmq.consumer");
-        Result res = readRabbitMqParameters(setting);
-        if (Result::SUCCESS != res)
-        {
-            return res;
-        }
-    }
-    catch (const SettingNotFoundException& e)
-    {
-        LOG_WARN(m_logger, "Canont find 'rabbitmq' section in configuration. Default values will be used");
-    }
-    LOG_INFO(m_logger, "Configuration parameters: <exchange: %s, queue: %s, key: %s>",
-        m_exchangeName.c_str(), m_queueName.c_str(), m_routingKey.c_str());
-
-    return Result::SUCCESS;
-}
-
-Result Consumer::customStart()
-{
-    Result res = setQosSync(1);
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot set QOS");
-        return res;
-    }
-
-    consume(m_queueName);
-
-    return Result::SUCCESS;
-}
-
 void Consumer::onMessageCallback(
     const AMQP::Message &message, uint64_t deliveryTag, bool redelivered)
 {

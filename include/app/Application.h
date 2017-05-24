@@ -6,6 +6,7 @@
 #include "../logger/LoggerFwd.h"
 #include "../common/Types.h"
 #include "Logic.h"
+#include "Configuration.h"
 
 namespace app
 {
@@ -23,13 +24,28 @@ private:
     // consumers are used to received messages from RabbitMQ
     // todo: consumers
     rabbitmq::ConsumerPtr m_consumer;
+    RmqConsumerCfg m_consumerCfg;
     // publisher is used to send messages to RabbitMQ
     rabbitmq::PublisherPtr m_publisher;
+    RmqHandlerCfg m_publisherCfg;
 
     // Application logic with storage
     Logic m_logic;
 
+private:
     Application();
+    Result readRmqHandlerCfg(
+        RmqHandlerCfg& rmqCfg,
+        libconfig::Config& cfg,
+        const std::string& section);
+    Result readRmqConsumerCfg(
+        RmqConsumerCfg& rmqCfg,
+        libconfig::Config& cfg,
+        const std::string& section);
+    Result prepareExchangeQueue(
+        rabbitmq::Handler& handler,
+        const RmqConsumerCfg& cfg);
+
 public:
     Application(const Application&) = delete;
     Application(Application&&) = delete;

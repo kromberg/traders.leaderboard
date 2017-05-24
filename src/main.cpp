@@ -181,9 +181,9 @@ int main(int argc, char* argv[])
         }
         catch (...) {}
 
-        std::string exchangeName = "leaderboard";
+        std::string exchangeName = "leaderboard-users";
         std::string queueName = "users-events-queue";
-        std::string routingKey = "routing-key";
+        std::string routingKey = "user-key";
 
         rabbitmq::Publisher publisher(eventLoop);
         Result res = publisher.initialize();

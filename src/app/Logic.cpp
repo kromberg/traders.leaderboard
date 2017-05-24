@@ -20,9 +20,10 @@ Logic::~Logic()
     stop();
 }
 
-void Logic::registerPublisher(rabbitmq::PublisherPtr publisher)
+void Logic::registerPublisher(rabbitmq::PublisherPtr publisher, const RmqHandlerCfg& cfg)
 {
     std::atomic_store(&m_publisher, publisher);
+    m_publisherCfg = cfg;
 }
 
 void Logic::loop()
@@ -35,7 +36,7 @@ void Logic::loop()
         time_t startTime = time(nullptr);
         LOG_INFO(m_logger, "Logic loop was started at %s", common::timeToString(startTime).c_str());
 
-        loopFunc();
+        loopFunc(startTime);
 
         time_t endTime = time(nullptr);
 
@@ -54,7 +55,7 @@ void Logic::loop()
     }
 }
 
-void Logic::loopFunc()
+void Logic::loopFunc(const time_t startTime)
 {
     if (!m_publisher || !m_publisher->channelPtr())
     {
@@ -71,6 +72,11 @@ void Logic::loopFunc()
     }
 
     std::string message;
+    message += "{";
+    message += "\"time\":";
+    message += "\"";
+    message += common::timeToString(startTime);
+    message += "\",";
     message += "leaderboards:[";
 
     for (auto&& userLb : leaderboards)
@@ -78,13 +84,14 @@ void Logic::loopFunc()
         message += "{\"id\":";
         message += std::to_string(userLb.first);
         message += ",";
+        message += "\"users\":[";
 
         LOG_DEBUG(m_logger, "User %ld leaderboard:", userLb.first);
         for (auto&& scoreUser : userLb.second)
         {
             LOG_DEBUG(m_logger, "\t%015ld -> <%ld, %s>",
                 scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
-            message += "\"user\":{";
+            message += "{";
             message += "\"id\":";
             message += std::to_string(scoreUser.second.m_id);
             message += ",";
@@ -98,12 +105,13 @@ void Logic::loopFunc()
             message += "},";
         }
         message.pop_back();
+        message += "]";
         message += "},";
     }
     message.pop_back();
-    message += "]";
+    message += "]}";
 
-    // start a transaction
+    // send message
     res = m_publisher->startTransactionSync();
     if (Result::SUCCESS != res)
     {
@@ -111,7 +119,7 @@ void Logic::loopFunc()
         return ;
     }
 
-    if (!m_publisher->publish(message))
+    if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, message))
     {
         LOG_ERROR(m_logger, "Cannot publish message");
         return ;

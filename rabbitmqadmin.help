@@ -1,0 +1,13 @@
+./rabbitmqadmin list bindings
+./rabbitmqadmin list queues
+./rabbitmqadmin list exchanges
+
+./rabbitmqadmin delete queue name='users-events-queue'
+./rabbitmqadmin delete queue name='leaderboard-events'
+./rabbitmqadmin delete queue name='1234'
+
+./rabbitmqadmin declare queue name=1234 durable=false
+./rabbitmqadmin declare queue name=4321 durable=false
+
+./rabbitmqadmin declare binding source=leaderboard destination=1234 destination_type=queue routing_key='leaderboard-key'
+./rabbitmqadmin declare binding source=leaderboard destination=4321 destination_type=queue routing_key='leaderboard-key'

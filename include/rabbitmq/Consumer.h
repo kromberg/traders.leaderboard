@@ -23,10 +23,6 @@ protected:
 protected:
     void onMessageCallback(const AMQP::Message &message, uint64_t deliveryTag, bool redelivered);
 
-protected:
-    virtual Result customConfigure(libconfig::Config& cfg) override;
-    virtual Result customStart() override;
-
 public:
     Consumer(EventLoop& loop);
     virtual ~Consumer() = default;

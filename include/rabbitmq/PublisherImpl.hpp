@@ -17,13 +17,6 @@ inline size_t Publisher::transactionMessagesCount() const
     return m_transactionMessagesCount;
 }
 
-template<class T>
-inline bool Publisher::publish(T&& message)
-{
-    ++ m_transactionMessagesCount;
-    return channel().publish(m_exchangeName, m_routingKey, std::forward<T>(message));
-}
-
 template<class... Args>
 inline bool Publisher::publish(Args... args)
 {
