@@ -233,7 +233,7 @@ Result InMemoryStorage::getLeaderboards(
             auto lbIt = leaderboards.find(currentIdIt->first);
             if (leaderboards.end() == lbIt)
             {
-                LOG_ERROR(m_logger, "Cannot find leaderborad for user %ld", lbIt->first);
+                LOG_ERROR(m_logger, "Cannot find leaderboard for user %ld", lbIt->first);
                 ++ currentIdIt;
                 continue;
             }
@@ -253,7 +253,7 @@ Result InMemoryStorage::getLeaderboards(
         auto idIt = connectedUsers.find(lbItem.second.m_id);
         if (connectedUsers.end() != idIt)
         {
-            LOG_DEBUG(m_logger, "User %ld found: adding leaderborad", *idIt);
+            LOG_DEBUG(m_logger, "User %ld found: adding leaderboard", *idIt);
             currentIdsToCount.emplace(*idIt, 0);
             leaderboards.emplace(*idIt, currentLeaderboard);
         }

@@ -7,13 +7,15 @@ html(lang="en")
         meta(name='viewport', content='width=device-width, initial-scale=1')
 
     body
-        h1 Pug - node template engine
-        #container.col
-            if youAreUsingPug
-                p You are amazing
-            else
-                p Get on it!
-            p.
-                Pug is a terse and simple templating language with a
-                strong focus on performance and powerful features.
-
+        ul
+            each leaderboards_obj in leaderboards_trend
+                li= leaderboards_obj.time
+                    ul
+                        each leaderboard_obj in leaderboards_obj.leaderboards
+                            li= leaderboard_obj.id
+                            ul
+                                each user in leaderboard_obj.users
+                                    div
+                                        - console.log(JSON.stringify(user))
+                                    li
+                                        p #{user.id} #{user.name} #{user.score}

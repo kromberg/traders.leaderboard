@@ -1,0 +1,8 @@
+{
+    // AMQP module config
+    "amqp": {
+        "address" : "amqp://guest:guest@localhost:5672/",
+        "exchange" : "leaderboard",
+        "routing-key" : "leaderboard-key"
+    }
+}

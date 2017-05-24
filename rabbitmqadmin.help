@@ -5,6 +5,7 @@
 ./rabbitmqadmin delete queue name='users-events-queue'
 ./rabbitmqadmin delete queue name='leaderboard-events'
 ./rabbitmqadmin delete queue name='1234'
+./rabbitmqadmin delete queue name=''
 
 ./rabbitmqadmin declare queue name=1234 durable=false
 ./rabbitmqadmin declare queue name=4321 durable=false

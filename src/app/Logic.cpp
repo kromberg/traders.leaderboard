@@ -77,7 +77,7 @@ void Logic::loopFunc(const time_t startTime)
     message += "\"";
     message += common::timeToString(startTime);
     message += "\",";
-    message += "leaderboards:[";
+    message += "\"leaderboards\":[";
 
     for (auto&& userLb : leaderboards)
     {
