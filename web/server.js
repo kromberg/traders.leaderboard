@@ -3,6 +3,7 @@ var session = require('client-sessions');
 var pug = require('pug');
 var amqp = require('amqplib/callback_api');
 var config = require('config');
+var path = require('path');
 
 var app = express();
 app.use(session({
@@ -14,10 +15,13 @@ app.use(session({
 
 // process static files
 app.use(express.static('public'));
+app.use('/scripts/listjs', express.static(path.join(__dirname, 'node_modules/list.js/dist')));
 app.set('views', __dirname + '/public');
 app.set('view engine', 'pug');
 
 var leaderboards_trend = []
+
+//req.session
 
 // process index.html
 app.get('/', function (req, res) {

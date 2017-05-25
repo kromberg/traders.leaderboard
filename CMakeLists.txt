@@ -11,21 +11,32 @@ include_directories(/usr/local/include/libmongoc-1.0)
 include_directories(/usr/local/include/bsoncxx/v_noabi)
 include_directories(/usr/local/include/libbson-1.0)
 
-list(APPEND SRC_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
 find_library(LIB_AMQPCPP amqpcpp)
 list(APPEND LIBS ${LIB_AMQPCPP})
-find_library(LIB_MONGO_CXX mongocxx)
-list(APPEND LIBS ${LIB_MONGO_CXX})
-find_library(LIB_BSON_CXX bsoncxx)
-list(APPEND LIBS ${LIB_BSON_CXX})
 find_library(LIB_CONFIG config++)
 list(APPEND LIBS ${LIB_CONFIG})
+find_library(LIB_MONGO_CXX mongocxx)
+find_library(LIB_BSON_CXX bsoncxx)
 
-foreach (_dir ${SRC_DIRS})
-    file(GLOB_RECURSE _src ${_dir}/*.cpp)
-    list(APPEND SRC_ALL ${_src})
-endforeach()
+# do not add the whole src directory
+list(APPEND SRC_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src/common
+                     ${CMAKE_CURRENT_SOURCE_DIR}/src/logger
+                     ${CMAKE_CURRENT_SOURCE_DIR}/src/rabbitmq)
 
-add_executable(leaderboard.out ${SRC_ALL})
-target_link_libraries(leaderboard.out ${LIBS})
+function(my_add_executable EXECUTABLE SRC_DIRS LIBS)
+    foreach (_dir ${SRC_DIRS})
+        file(GLOB_RECURSE _src ${_dir}/*.cpp)
+        list(APPEND SRC_ALL ${_src})
+    endforeach()
+
+    add_executable(${EXECUTABLE} ${SRC_ALL})
+    target_link_libraries(${EXECUTABLE} ${LIBS})
+endfunction(my_add_executable)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/leaderboard_app)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/traffic_generator)
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/cfg.cfg DESTINATION ${CMAKE_BINARY_DIR})

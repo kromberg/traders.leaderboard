@@ -5,17 +5,48 @@ html(lang="en")
         meta(charset='utf-8')
         title Leaderboard
         meta(name='viewport', content='width=device-width, initial-scale=1')
+        style
+            include css/list.css
+        script(src='scripts/listjs/list.js')
+        
 
     body
-        ul
-            each leaderboards_obj in leaderboards_trend
-                li= leaderboards_obj.time
-                    ul
-                        each leaderboard_obj in leaderboards_obj.leaderboards
-                            li= leaderboard_obj.id
-                            ul
+        div(id='leaderboards-list')
+            input(class='search')
+            button(class='sort' data-sort='id') Sort by id
+            button(class='sort' data-sort='name') Sort by name
+            ul(class='list')
+                li
+                    h3(class='name') Johny
+                    p(class='id') 1
+                li
+                    h3(class='name') Jonas
+                    p(class='id') 2
+                li
+                    h3(class='name') ARR
+                    p(class='id') 4
+                li
+                    h3(class='name') Bas
+                    p(class='id') 3
+        script(src='scripts/leaderboard.list.js')
+
+
+//-
+        each leaderboards_obj in leaderboards_trend
+            h1 #{leaderboards_obj.time}
+                each leaderboard_obj in leaderboards_obj.leaderboards
+                    h2 #{leaderboard_obj.id}
+                    div(class='container')
+                        div(class='table-responsive')
+                            table(class='table')
+                                thead
+                                    tr
+                                        th ID
+                                        th Name
+                                        th Score
                                 each user in leaderboard_obj.users
-                                    div
-                                        - console.log(JSON.stringify(user))
-                                    li
-                                        p #{user.id} #{user.name} #{user.score}
+                                    tbody
+                                        tr
+                                            th #{user.id}
+                                            th #{user.name}
+                                            th #{user.score}
