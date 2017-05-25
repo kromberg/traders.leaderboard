@@ -245,6 +245,15 @@ void Logic::stop()
     m_state = State::STOPPED;
 }
 
+void Logic::deinitialize()
+{
+    if (State::STOPPED != m_state)
+    {
+        return ;
+    }
+    m_state = State::DEINITIALIZED;
+}
+
 // user_registered(id,name)
 Result Logic::onUserRegistered(const int64_t id, const std::string& name)
 {

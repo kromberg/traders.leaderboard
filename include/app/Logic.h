@@ -50,6 +50,7 @@ public:
     Result configure(libconfig::Config& cfg);
     Result start();
     void stop();
+    void deinitialize();
 
     void registerPublisher(rabbitmq::PublisherPtr publisher, const RmqHandlerCfg& cfg);
 

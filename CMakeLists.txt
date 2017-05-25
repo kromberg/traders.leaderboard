@@ -37,6 +37,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/leaderboard_app)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/traffic_generator)
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/cfg.cfg DESTINATION ${CMAKE_BINARY_DIR})
