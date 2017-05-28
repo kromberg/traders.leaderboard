@@ -109,14 +109,22 @@ void writeTestData(
 
 int main(int argc, char* argv[])
 {
+    if (argc < 2)
+    {
+        fprintf(stderr, "Invalid format ");
+        return 2;
+    }
+
+    std::string cfgName(argv[1]);
+
     logger::Logger& l = logger::Logger::instance();
-    if (!l.configure())
+    if (!l.configure(cfgName))
     {
         fprintf(stderr, "Cannot configure logger\n");
         return 2;
     }
 
-    if (!l.initialize())
+    if (!l.start())
     {
         fprintf(stderr, "Cannot initialize logger\n");
         return 3;
@@ -148,7 +156,7 @@ int main(int argc, char* argv[])
     libconfig::Config cfg;
     try
     {
-        cfg.readFile("cfg.cfg");
+        cfg.readFile(cfgName.c_str());
     }
     catch (...) {}
 
@@ -203,7 +211,7 @@ int main(int argc, char* argv[])
 
     eventLoop.stop();
 
-    l.deinitialize();
+    l.stop();
 
     return 0;
 }

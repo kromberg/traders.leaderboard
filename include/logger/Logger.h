@@ -38,8 +38,8 @@ public:
     CategoryPtr getCategory(const std::string& name);
 
     bool configure(const std::string& filename = std::string());
-    bool initialize();
-    bool deinitialize();
+    bool start();
+    bool stop();
 };
 
 } // namespace logger

@@ -23,7 +23,7 @@ inline bool LogWriter::configure(const std::string& filename)
     return true;
 }
 
-inline bool LogWriter::initialize()
+inline bool LogWriter::start()
 {
     switch (m_type)
     {
@@ -43,7 +43,7 @@ inline bool LogWriter::initialize()
     return true;
 }
 
-inline void LogWriter::deinitialize()
+inline void LogWriter::stop()
 {}
 
 template<class... Args>

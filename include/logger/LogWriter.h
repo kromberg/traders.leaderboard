@@ -39,8 +39,8 @@ public:
     const Level level() const;
 
     bool configure(const std::string& filename);
-    bool initialize();
-    void deinitialize();
+    bool start();
+    void stop();
 };
 
 } // namespace logger

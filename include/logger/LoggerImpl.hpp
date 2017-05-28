@@ -43,6 +43,11 @@ inline CategoryPtr Logger::getCategory(const std::string& name)
 
 inline bool Logger::configure(const std::string& filename)
 {
+    if (State::CREATED != m_state)
+    {
+        return false;
+    }
+
     if (!m_writer.configure(filename))
     {
         return false;
@@ -52,32 +57,32 @@ inline bool Logger::configure(const std::string& filename)
     return true;
 }
 
-inline bool Logger::initialize()
+inline bool Logger::start()
 {
     if (State::CONFIGURED != m_state)
     {
         return false;
     }
 
-    if (!m_writer.initialize())
+    if (!m_writer.start())
     {
         return false;
     }
 
-    m_state = State::INITIALIZED;
+    m_state = State::STARTED;
     return true;
 }
 
-inline bool Logger::deinitialize()
+inline bool Logger::stop()
 {
-    if (State::INITIALIZED != m_state)
+    if (State::STARTED != m_state)
     {
         return false;
     }
 
-    m_writer.deinitialize();
+    m_writer.stop();
 
-    m_state = State::DEINITIALIZED;
+    m_state = State::STOPPED;
     return true;
 }
 

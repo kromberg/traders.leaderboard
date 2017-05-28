@@ -17,16 +17,38 @@
 using common::State;
 using common::Result;
 
+void signalHandler(int s)
+{
+    fprintf(stderr, "Caught signal %d\n",s);
+
+    app::Application& application = app::Application::getInstance();
+    application.stop();
+    application.deinitialize();
+
+    logger::Logger& l = logger::Logger::instance();
+    l.stop();
+
+    exit(1);
+}
+
 int main(int argc, char* argv[])
 {
+    if (argc < 2)
+    {
+        fprintf(stderr, "Invalid format ");
+        return 2;
+    }
+
+    std::string cfgName(argv[1]);
+
     logger::Logger& l = logger::Logger::instance();
-    if (!l.configure())
+    if (!l.configure(cfgName))
     {
         fprintf(stderr, "Cannot configure logger\n");
         return 2;
     }
 
-    if (!l.initialize())
+    if (!l.start())
     {
         fprintf(stderr, "Cannot initialize logger\n");
         return 3;
@@ -40,7 +62,7 @@ int main(int argc, char* argv[])
     {
         return 3;
     }
-    res = application.configure();
+    res = application.configure(cfgName);
     if (Result::SUCCESS != res)
     {
         return 3;
@@ -50,11 +72,13 @@ int main(int argc, char* argv[])
     {
         return 3;
     }
-    sleep(200);
-    application.stop();
-    application.deinitialize();
 
-    l.deinitialize();
+    signal(SIGINT, signalHandler);
+
+    while (true)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+    }
 
     return 0;
 }
