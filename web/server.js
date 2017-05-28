@@ -14,8 +14,10 @@ app.use(session({
 }));
 
 // process static files
+app.use('/listjs', express.static(path.join(__dirname, 'node_modules/list.js/dist')));
+app.use('/material-css', express.static(path.join(__dirname, 'node_modules/materialize-css/dist')));
+
 app.use(express.static('public'));
-app.use('/scripts/listjs', express.static(path.join(__dirname, 'node_modules/list.js/dist')));
 app.set('views', __dirname + '/public');
 app.set('view engine', 'pug');
 

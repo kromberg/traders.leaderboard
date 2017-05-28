@@ -114,7 +114,12 @@ Result MessageParser::onUserDeal(const std::string& command, rabbitmq::Processin
         return r;
     }
 
-    time_t t = common::timeFromString(timeBuf.get());
+    time_t t;
+    r = common::timeFromString(t, timeBuf.get());
+    if (Result::SUCCESS != r)
+    {
+        return r;
+    }
 
     r = m_onUserDealCallback(id, t, amount);
     if (Result::SUCCESS != r)
@@ -148,7 +153,12 @@ Result MessageParser::onUserDealWon(const std::string& command, rabbitmq::Proces
         return r;
     }
 
-    time_t t = common::timeFromString(timeBuf.get());
+    time_t t;
+    r = common::timeFromString(t, timeBuf.get());
+    if (Result::SUCCESS != r)
+    {
+        return r;
+    }
 
     r = m_onUserDealWonCallback(id, t, amount);
     if (Result::SUCCESS != r)

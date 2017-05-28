@@ -18,11 +18,16 @@ inline void timeToBuf(char* const buf, const size_t size, const std::time_t t, c
     std::strftime(buf, size, fmt, std::gmtime(&t));
 }
 
-inline time_t timeFromString(const char* buf, const char* fmt) 
+inline Result timeFromString(time_t& timeRes, const char* buf, const char* fmt) 
 {
-    struct tm timeStruct;
-    strptime(buf, fmt, &timeStruct);
-    return mktime(&timeStruct);
+    struct tm timeStruct = {0};
+    char* res = strptime(buf, fmt, &timeStruct);
+    if (!res)
+    {
+        return Result::INVALID_FORMAT;
+    }
+    timeRes = mktime(&timeStruct);
+    return Result::SUCCESS;
 }
 
 } // namespace common

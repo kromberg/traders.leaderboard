@@ -1,37 +1,44 @@
 #include <libconfig.h++>
 #include <gtest/gtest.h>
 
-#include <logger/LoggerDefines.h>
 #include <common/Types.h>
 #include <app/Logic.h>
 
+#include "../fixtures/LoggerFixture.h"
+
+class LogicFixture : public LoggerFixture
+{};
+
 using common::Result;
 
-class LoggerFixture : public ::testing::Test
-{
-protected:
-protected:
-    virtual void SetUp() override
-    {
-        logger::Logger& l = logger::Logger::instance();
-        ASSERT_TRUE(l.configure());
-        ASSERT_TRUE(l.initialize());
-    }
-
-    virtual void TearDown() override
-    {
-        logger::Logger& l = logger::Logger::instance();
-        l.deinitialize();
-    }
-};
-
-TEST_F(LoggerFixture, LogicStart)
+TEST_F(LogicFixture, LogicGoodCycle)
 {
     libconfig::Config cfg;
     app::Logic logic;
-    ASSERT_TRUE(Result::SUCCESS == logic.initialize());
-    ASSERT_TRUE(Result::SUCCESS == logic.configure(cfg));
-    ASSERT_TRUE(Result::SUCCESS == logic.start());
+    ASSERT_EQ(Result::SUCCESS, logic.initialize());
+    ASSERT_EQ(Result::SUCCESS, logic.configure(cfg));
+    ASSERT_EQ(Result::SUCCESS, logic.start());
+    logic.stop();
+    logic.deinitialize();
+}
+
+TEST_F(LogicFixture, LogicInvalidState)
+{
+    libconfig::Config cfg;
+    app::Logic logic;
+    ASSERT_EQ(Result::INVALID_STATE, logic.configure(cfg));
+    ASSERT_EQ(Result::INVALID_STATE, logic.start());
+    ASSERT_EQ(Result::SUCCESS, logic.initialize());
+    ASSERT_EQ(Result::INVALID_STATE, logic.initialize());
+    ASSERT_EQ(Result::INVALID_STATE, logic.start());
+    ASSERT_EQ(Result::SUCCESS, logic.configure(cfg));
+    ASSERT_EQ(Result::INVALID_STATE, logic.initialize());
+    ASSERT_EQ(Result::INVALID_STATE, logic.configure(cfg));
+    ASSERT_EQ(Result::SUCCESS, logic.start());
+    ASSERT_EQ(Result::INVALID_STATE, logic.initialize());
+    ASSERT_EQ(Result::INVALID_STATE, logic.configure(cfg));
+    ASSERT_EQ(Result::INVALID_STATE, logic.start());
+
     logic.stop();
     logic.deinitialize();
 }

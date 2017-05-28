@@ -5,9 +5,9 @@ html(lang="en")
         meta(charset='utf-8')
         title Leaderboard
         meta(name='viewport', content='width=device-width, initial-scale=1')
-        style
-            include css/list.css
-        script(src='scripts/listjs/list.js')
+        script(src='/listjs/list.js')
+        link(rel='stylesheet', href='/css/list.css')
+        link(rel='stylesheet', href='/material-css/css/materialize.css')
         
 
     body
@@ -15,20 +15,20 @@ html(lang="en")
             input(class='search')
             button(class='sort' data-sort='id') Sort by id
             button(class='sort' data-sort='name') Sort by name
-            ul(class='list')
-                li
+            ul(class='list' class='collection')
+                li(href='#!' class='collection-item')
                     h3(class='name') Johny
                     p(class='id') 1
-                li
+                li(href='#!' class='collection-item')
                     h3(class='name') Jonas
                     p(class='id') 2
-                li
+                li(href='#!' class='collection-item')
                     h3(class='name') ARR
                     p(class='id') 4
-                li
+                li(href='#!' class='collection-item')
                     h3(class='name') Bas
                     p(class='id') 3
-        script(src='scripts/leaderboard.list.js')
+        script(src='/scripts/leaderboard.list.js')
 
 
 //-
