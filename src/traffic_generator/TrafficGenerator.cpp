@@ -123,20 +123,6 @@ Result Generator::start()
         return res;
     }
 
-    res = m_publisher->declareQueueSync(m_cfg.m_queueName);
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot declare queue '%s'", m_cfg.m_queueName.c_str());
-        return res;
-    }
-    res = m_publisher->bindQueueSync(m_cfg.m_exchangeName, m_cfg.m_queueName, m_cfg.m_routingKey);
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot bind queue '%s' to exchange '%s' with key '%s'",
-            m_cfg.m_exchangeName.c_str(), m_cfg.m_queueName.c_str(), m_cfg.m_routingKey.c_str());
-        return res;
-    }
-
     m_state = State::STARTED;
 
     LOG_INFO(m_logger, "TG start finished");

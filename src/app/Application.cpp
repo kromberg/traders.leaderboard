@@ -88,13 +88,13 @@ Result Application::configure(const std::string& filename)
             "Default values will be used", e.what());
     }
 
-    uint64_t consumersCount = 2;
+    uint32_t consumersCount = 2;
     try
     {
         Setting& setting = cfg.lookup("application");
-        if (!setting.lookupValue("consumers_count", consumersCount))
+        if (!setting.lookupValue("consumers-count", consumersCount))
         {
-            LOG_WARN(m_logger, "Canont find 'consumers_count' parameter in configuration. Default value will be used");
+            LOG_WARN(m_logger, "Canont find 'consumers-count' parameter in configuration. Default value will be used");
         }
     }
     catch (const SettingNotFoundException& e)
@@ -106,7 +106,7 @@ Result Application::configure(const std::string& filename)
         LOG_ERROR(m_logger, "Configuration is invalid: consumers_count is less than 1");
         return Result::CFG_INVALID;
     }
-    LOG_INFO(m_logger, "Configuration parameters: <consumers_count = %lu>", consumersCount);
+    LOG_INFO(m_logger, "Configuration parameters: <consumers-count = %lu>", consumersCount);
 
     Result res = readRmqConsumerCfg(
         m_consumerCfg,

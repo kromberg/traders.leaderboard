@@ -59,12 +59,12 @@ void Logic::loopFunc(const time_t startTime)
 {
     if (!m_publisher || !m_publisher->channelPtr())
     {
-        LOG_WARN(m_logger, "Do not calculate leaderboard since publisher is missing or not readys");
+        LOG_WARN(m_logger, "Do not calculate leaderboard since publisher is missing or not ready");
         return ;
     }
 
     db::UserLeaderboards leaderboards;
-    Result res = m_storage->getLeaderboards(leaderboards, 10, 1, 1);
+    Result res = m_storage->getLeaderboards(leaderboards, 10, 10, 10);
     if (Result::SUCCESS != res)
     {
         LOG_WARN(m_logger, "Cannot get leaderboard");
@@ -164,16 +164,16 @@ Result Logic::configure(libconfig::Config& cfg)
     try
     {
         Setting& setting = cfg.lookup("application");
-        if (!setting.lookupValue("loop_interval", m_loopIntervalSeconds))
+        if (!setting.lookupValue("loop-interval", m_loopIntervalSeconds))
         {
-            LOG_WARN(m_logger, "Canont find 'loop_interval' parameter in configuration. Default value will be used");
+            LOG_WARN(m_logger, "Canont find 'loop-interval' parameter in configuration. Default value will be used");
         }
     }
     catch (const SettingNotFoundException& e)
     {
         LOG_WARN(m_logger, "Canont find 'application' section in configuration. Default values will be used");
     }
-    LOG_INFO(m_logger, "Configuration parameters: <loop_interval: %d seconds>", m_loopIntervalSeconds);
+    LOG_INFO(m_logger, "Configuration parameters: <loop-interval: %d seconds>", m_loopIntervalSeconds);
 
     std::string storageTypeStr = "mongo";
     try
