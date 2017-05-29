@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(leaderboard C CXX)
 
 # set compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O0 -g -m64 -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O2 -g -m64 -Wall -Werror")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(/usr/local/include/mongocxx/v_noabi)
@@ -39,4 +39,4 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/leaderboard_app)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/traffic_generator)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/cfg.cfg DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/cfg.cfg DESTINATION ${CMAKE_BINARY_DIR})

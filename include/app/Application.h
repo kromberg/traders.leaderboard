@@ -22,8 +22,7 @@ private:
     // event loop for sending/receiving events for AMQP-CPP library
     rabbitmq::EventLoop m_eventLoop;
     // consumers are used to received messages from RabbitMQ
-    // todo: consumers
-    rabbitmq::ConsumerPtr m_consumer;
+    std::vector<rabbitmq::ConsumerPtr> m_consumers;
     RmqConsumerCfg m_consumerCfg;
     // publisher is used to send messages to RabbitMQ
     rabbitmq::PublisherPtr m_publisher;

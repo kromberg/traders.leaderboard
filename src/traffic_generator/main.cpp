@@ -51,12 +51,12 @@ void writeTestData(
 
         for (size_t deal = 0; deal < dealsPerUser; ++ deal)
         {
-            if (!publisher.publish(exchangeName, routingKey, "user_deal(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")"))
+            if (!publisher.publish(exchangeName, routingKey, "user_deal(" + idStr + ",2017-05-24T10:10:10," + std::to_string(distribution(generator)) + ")"))
             {
                 LOG_ERROR(log, "Cannot publish message");
                 return ;
             }
-            if (!publisher.publish(exchangeName, routingKey, "user_deal_won(" + idStr + ",2017-05-20T10:10:10," + std::to_string(distribution(generator)) + ")"))
+            if (!publisher.publish(exchangeName, routingKey, "user_deal_won(" + idStr + ",2017-05-24T10:10:10," + std::to_string(distribution(generator)) + ")"))
             {
                 LOG_ERROR(log, "Cannot publish message");
                 return ;
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 {
     if (argc < 2)
     {
-        fprintf(stderr, "Invalid format ");
+        fprintf(stderr, "Invalid format\n");
         return 2;
     }
 
@@ -140,17 +140,17 @@ int main(int argc, char* argv[])
     size_t dealsPerUser = 10;
     size_t transactionSize = 100;
 
-    if (argc >= 2)
-    {
-        countUsers = std::stoul(argv[1]);
-    }
     if (argc >= 3)
     {
-        dealsPerUser = std::stoul(argv[2]);
+        countUsers = std::stoul(argv[2]);
     }
     if (argc >= 4)
     {
-        transactionSize = std::stoul(argv[3]);
+        dealsPerUser = std::stoul(argv[3]);
+    }
+    if (argc >= 5)
+    {
+        transactionSize = std::stoul(argv[4]);
     }
 
     libconfig::Config cfg;

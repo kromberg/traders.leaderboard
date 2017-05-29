@@ -24,7 +24,7 @@ inline CategoryPtr Logger::getLogCategory(const std::string& name)
 
 inline CategoryPtr Logger::getCategory(const std::string& name)
 {
-    if (State::INITIALIZED != m_state)
+    if (State::STARTED != m_state)
     {
         return CategoryPtr();
     }
