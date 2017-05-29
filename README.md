@@ -1,4 +1,33 @@
 # Leaderboard application
+## Pre-requisites
+This application depends on the following packages:
+ * cmake
+ * [AMQP-CPP](https://github.com/CopernicaMarketingSoftware/AMQP-CPP)
+ * [mongo-c-driver](https://github.com/mongodb/mongo-c-driver)
+ * [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver)
+ * [libconfig++](http://www.hyperrealm.com/libconfig/)
+ * [Google Test](https://github.com/google/googletest) (for tests only)
+## Installation
+```bash
+mkdir build
+cd build
+cmake ..
+make or make <target>
+./leaderboard_app.out app.cfg
+or
+./traffic_generator.out tg.cfg
+```
+## Tests
+```bash
+mkdir build
+cd build
+cmake ..
+make or make <target>
+./leaderboard_test.out
+make coverage
+<browser you like> coverage/index.html
+make clean-coverage
+```
 ## Initialization
 Logger must be configured and started before the application [Logger information](Logger.md)
 ```c++
@@ -9,7 +38,8 @@ if (Result::SUCCESS != res)
     // handle error
 }
 ```
-## Configuration. For more informartion, please, see [Configuration information](Config.md)
+## Configuration.
+For more informartion, please, see [Configuration information](Config.md)
 ```c++
 Result res = application.configure(cfgName);
 if (Result::SUCCESS != res)
