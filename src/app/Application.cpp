@@ -49,7 +49,6 @@ Result Application::initialize()
             static_cast<int32_t>(res), common::resultToStr(res));
         return res;
     }
-    m_logic.registerPublisher(m_publisher, m_publisherCfg);
 
     m_state = State::INITIALIZED;
     return Result::SUCCESS;
@@ -116,7 +115,7 @@ Result Application::configure(const std::string& filename)
     res = readRmqHandlerCfg(
         m_publisherCfg,
         cfg,
-        "application.consumer");
+        "application.publisher");
     if (Result::SUCCESS != res)
     {
         LOG_ERROR(m_logger, "Cannot read publisher configuration. Result: %d(%s)",
@@ -226,6 +225,15 @@ Result Application::start()
             static_cast<int32_t>(res), common::resultToStr(res));
         return res;
     }
+
+    res = m_publisher->declareExchangeSync(m_publisherCfg.m_exchangeName, AMQP::fanout);
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Cannot declare exchange '%s'", m_publisherCfg.m_exchangeName.c_str());
+        return res;
+    }
+
+    m_logic.registerPublisher(m_publisher, m_publisherCfg);
 
     m_state = State::STARTED;
     return Result::SUCCESS;
@@ -347,7 +355,7 @@ Result Application::prepareExchangeQueue(
     Result res = handler.declareExchangeSync(cfg.m_exchangeName, AMQP::fanout);
     if (Result::SUCCESS != res)
     {
-        LOG_ERROR(m_logger, "Cannot declare exchange '%s'",cfg. m_exchangeName.c_str());
+        LOG_ERROR(m_logger, "Cannot declare exchange '%s'", cfg.m_exchangeName.c_str());
         return res;
     }
     res = handler.declareQueueSync(cfg.m_queueName);

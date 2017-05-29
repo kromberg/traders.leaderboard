@@ -22,8 +22,8 @@ Logic::~Logic()
 
 void Logic::registerPublisher(rabbitmq::PublisherPtr publisher, const RmqHandlerCfg& cfg)
 {
-    std::atomic_store(&m_publisher, publisher);
     m_publisherCfg = cfg;
+    std::atomic_store(&m_publisher, publisher);
 }
 
 void Logic::loop()

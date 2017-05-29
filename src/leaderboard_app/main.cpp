@@ -28,7 +28,7 @@ void signalHandler(int s)
     logger::Logger& l = logger::Logger::instance();
     l.stop();
 
-    exit(1);
+    exit(0);
 }
 
 int main(int argc, char* argv[])

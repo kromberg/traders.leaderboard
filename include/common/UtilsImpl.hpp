@@ -9,13 +9,13 @@ namespace common
 inline std::string timeToString(const std::time_t t, const char* fmt)
 {
     static thread_local char buf[100];
-    std::strftime(buf, sizeof(buf), fmt, std::gmtime(&t));
+    std::strftime(buf, sizeof(buf), fmt, std::localtime(&t));
     return std::string(buf);
 }
 
 inline void timeToBuf(char* const buf, const size_t size, const std::time_t t, const char* fmt)
 {
-    std::strftime(buf, size, fmt, std::gmtime(&t));
+    std::strftime(buf, size, fmt, std::localtime(&t));
 }
 
 inline Result timeFromString(time_t& timeRes, const char* buf, const char* fmt) 
