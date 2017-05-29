@@ -1,5 +1,6 @@
 # Leaderboard application
 ## Initialization
+Logger must be configured and started before the application [Logger information](Logger.md)
 ```c++
 app::Application& application = app::Application::instance();
 Result res = application.initialize();
@@ -8,7 +9,7 @@ if (Result::SUCCESS != res)
     // handle error
 }
 ```
-## Configuration. For more informartion, please, see [Logger.md](Logger.md)
+## Configuration. For more informartion, please, see [Configuration information](Config.md)
 ```c++
 Result res = application.configure(cfgName);
 if (Result::SUCCESS != res)
