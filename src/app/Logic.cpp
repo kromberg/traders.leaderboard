@@ -149,7 +149,7 @@ Result Logic::initialize()
     return Result::SUCCESS;
 }
 
-Result Logic::configure(libconfig::Config& cfg)
+Result Logic::configure(const libconfig::Config& cfg)
 {
     using namespace libconfig;
 

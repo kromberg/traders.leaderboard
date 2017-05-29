@@ -47,7 +47,7 @@ public:
 
     const Level level() const;
 
-    bool configure(libconfig::Config& cfg);
+    bool configure(const libconfig::Config& cfg);
     bool start();
     void stop();
 };

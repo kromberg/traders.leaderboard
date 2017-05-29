@@ -6,6 +6,7 @@
 #include "../logger/LoggerFwd.h"
 #include "../common/Types.h"
 #include "Logic.h"
+#include "ApplicationBase.h"
 #include "Configuration.h"
 
 namespace app
@@ -13,14 +14,9 @@ namespace app
 using common::State;
 using common::Result;
 
-class Application
+class Application : public ApplicationBase
 {
 private:
-    logger::CategoryPtr m_logger;
-
-    State m_state;
-    // event loop for sending/receiving events for AMQP-CPP library
-    rabbitmq::EventLoop m_eventLoop;
     // consumers are used to received messages from RabbitMQ
     std::vector<rabbitmq::ConsumerPtr> m_consumers;
     RmqConsumerCfg m_consumerCfg;
@@ -33,17 +29,12 @@ private:
 
 private:
     Application();
-    Result readRmqHandlerCfg(
-        RmqHandlerCfg& rmqCfg,
-        libconfig::Config& cfg,
-        const std::string& section);
-    Result readRmqConsumerCfg(
-        RmqConsumerCfg& rmqCfg,
-        libconfig::Config& cfg,
-        const std::string& section);
-    Result prepareExchangeQueue(
-        rabbitmq::Handler& handler,
-        const RmqConsumerCfg& cfg);
+
+    virtual Result doInitialize() override;
+    virtual Result doConfigure(const libconfig::Config& cfg) override;
+    virtual Result doStart() override;
+    virtual void doStop() override;
+    virtual void doDeinitialize() override;
 
 public:
     Application(const Application&) = delete;
@@ -52,13 +43,7 @@ public:
     Application& operator=(Application&&) = delete;
     ~Application();
 
-    static Application& getInstance();
-
-    Result initialize();
-    Result configure(const std::string& filename = "cfg.cfg");
-    Result start();
-    void stop();
-    void deinitialize();
+    static Application& instance();
 };
 } // namespace app
 

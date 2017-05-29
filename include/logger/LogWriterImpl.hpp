@@ -54,7 +54,7 @@ inline const Level LogWriter::level() const
     return m_level;
 }
 
-inline bool LogWriter::configure(libconfig::Config& cfg)
+inline bool LogWriter::configure(const libconfig::Config& cfg)
 {
     using namespace libconfig;
 

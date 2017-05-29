@@ -39,11 +39,11 @@ protected:
     logger::CategoryPtr m_logger;
 
 protected:
-    virtual Result customInitialize();
-    virtual Result customConfigure(libconfig::Config& cfg);
-    virtual Result customStart();
-    virtual void customStop();
-    virtual void customDeinitialize();
+    virtual Result doInitialize();
+    virtual Result doConfigure(const libconfig::Config& cfg);
+    virtual Result doStart();
+    virtual void doStop();
+    virtual void doDeinitialize();
 
 public:
     Handler(EventLoop& loop) throw(std::runtime_error);
@@ -54,7 +54,7 @@ public:
     Handler& operator=(Handler&& h) = default;
 
     Result initialize();
-    Result configure(libconfig::Config& cfg);
+    Result configure(const libconfig::Config& cfg);
     Result start();
     void stop();
     void deinitialize();

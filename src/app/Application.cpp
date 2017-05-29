@@ -9,6 +9,7 @@ namespace app
 {
 
 Application::Application():
+    ApplicationBase(),
     m_consumerCfg("leaderboard-users", "user-key", "users-events-queue"),
     m_publisherCfg("leaderboard", "leaderboard-key")
 {
@@ -18,23 +19,14 @@ Application::Application():
 Application::~Application()
 {}
 
-Application& Application::getInstance()
+Application& Application::instance()
 {
     static Application instance;
     return instance;
 }
 
-Result Application::initialize()
+Result Application::doInitialize()
 {
-    if (State::CREATED != m_state)
-    {
-        LOG_ERROR(m_logger, "Cannot initialize application in state %d(%s)",
-            static_cast<int32_t>(m_state), common::stateToStr(m_state));
-        return Result::INVALID_STATE;
-    }
-
-    LOG_INFO(m_logger, "Application initialization started");
-
     m_publisher.reset(new rabbitmq::Publisher(m_eventLoop));
     Result res = m_publisher->initialize();
     if (Result::SUCCESS != res)
@@ -51,47 +43,18 @@ Result Application::initialize()
             static_cast<int32_t>(res), common::resultToStr(res));
         return res;
     }
-
-    m_state = State::INITIALIZED;
-
-    LOG_INFO(m_logger, "Application initialization finished");
     return Result::SUCCESS;
 }
 
-Result Application::configure(const std::string& filename)
+Result Application::doConfigure(const libconfig::Config& cfg)
 {
     using namespace std::placeholders;
     using namespace libconfig;
 
-    if (State::INITIALIZED != m_state)
-    {
-        LOG_ERROR(m_logger, "Cannot configure application in state %d(%s)",
-            static_cast<int32_t>(m_state), common::stateToStr(m_state));
-        return Result::INVALID_STATE;
-    }
-
-    LOG_INFO(m_logger, "Application configuration started");
-
-    Config cfg;
-    try
-    {
-        cfg.readFile(filename.c_str());
-    }
-    catch (const ParseException& e)
-    {
-        LOG_WARN(m_logger, "Cannot parse configuration file. Exception occurred: %s. "
-            "Default values will be used", e.what());
-    }
-    catch (const FileIOException& e)
-    {
-        LOG_WARN(m_logger, "Cannot read configuration file. Exception occurred: %s. "
-            "Default values will be used", e.what());
-    }
-
     uint32_t consumersCount = 2;
     try
     {
-        Setting& setting = cfg.lookup("application");
+        const Setting& setting = cfg.lookup("application");
         if (!setting.lookupValue("consumers-count", consumersCount))
         {
             LOG_WARN(m_logger, "Canont find 'consumers-count' parameter in configuration. Default value will be used");
@@ -106,12 +69,9 @@ Result Application::configure(const std::string& filename)
         LOG_ERROR(m_logger, "Configuration is invalid: consumers_count is less than 1");
         return Result::CFG_INVALID;
     }
-    LOG_INFO(m_logger, "Configuration parameters: <consumers-count = %lu>", consumersCount);
+    LOG_INFO(m_logger, "Configuration parameters: <consumers-count: %u>", consumersCount);
 
-    Result res = readRmqConsumerCfg(
-        m_consumerCfg,
-        cfg,
-        "application.consumer");
+    Result res = m_consumerCfg.read(cfg, "application.consumer", m_logger);
     if (Result::SUCCESS != res)
     {
         LOG_ERROR(m_logger, "Cannot read consumer configuration. Result: %d(%s)",
@@ -119,10 +79,7 @@ Result Application::configure(const std::string& filename)
         return res;
     }
 
-    res = readRmqHandlerCfg(
-        m_publisherCfg,
-        cfg,
-        "application.publisher");
+    res = m_publisherCfg.read(cfg, "application.publisher", m_logger);
     if (Result::SUCCESS != res)
     {
         LOG_ERROR(m_logger, "Cannot read publisher configuration. Result: %d(%s)",
@@ -171,25 +128,11 @@ Result Application::configure(const std::string& filename)
         return res;
     }
 
-    m_state = State::CONFIGURED;
-
-    LOG_INFO(m_logger, "Application configuration finished");
     return Result::SUCCESS;
 }
 
-Result Application::start()
+Result Application::doStart()
 {
-    if (State::CONFIGURED != m_state)
-    {
-        LOG_ERROR(m_logger, "Cannot start application in state %d(%s)",
-            static_cast<int32_t>(m_state), common::stateToStr(m_state));
-        return Result::INVALID_STATE;
-    }
-
-    LOG_INFO(m_logger, "Application start started");
-
-    m_eventLoop.start();
-
     Result res = m_logic.start();
     if (Result::SUCCESS != res)
     {
@@ -248,152 +191,28 @@ Result Application::start()
 
     m_logic.registerPublisher(m_publisher, m_publisherCfg);
 
-    m_state = State::STARTED;
-
-    LOG_INFO(m_logger, "Application start finished");
     return Result::SUCCESS;
 }
 
-void Application::stop()
+void Application::doStop()
 {
-    if (State::STARTED != m_state)
-    {
-        return ;
-    }
-
-    LOG_INFO(m_logger, "Application stop started");
-
     m_logic.stop();
     m_publisher->stop();
     for (auto&& consumer : m_consumers)
     {
         consumer->stop();
     }
-
-    m_eventLoop.stop();
-
-    m_state = State::STOPPED;
-    LOG_INFO(m_logger, "Application stop finished");
     return ;
 }
 
-void Application::deinitialize()
+void Application::doDeinitialize()
 {
-    if (State::STOPPED != m_state)
-    {
-        return ;
-    }
-
-    LOG_INFO(m_logger, "Application deinitialization started");
-
     m_publisher->deinitialize();
     for (auto&& consumer : m_consumers)
     {
         consumer->deinitialize();
     }
-
-    m_state = State::DEINITIALIZED;
-
-    LOG_INFO(m_logger, "Application deinitialization finished");
     return ;
-}
-
-Result Application::readRmqHandlerCfg(
-    RmqHandlerCfg& rmqCfg,
-    libconfig::Config& cfg,
-    const std::string& section)
-{
-    using namespace libconfig;
-
-    try
-    {
-        Setting& setting = cfg.lookup(section);
-        if (!setting.lookupValue("exchange", rmqCfg.m_exchangeName))
-        {
-            LOG_WARN(m_logger, "Canont find 'exchange' parameter in configuration. Default value will be used");
-        }
-        if (!setting.lookupValue("routing-key", rmqCfg.m_routingKey))
-        {
-            LOG_WARN(m_logger, "Canont find 'key' parameter in configuration. Default value will be used");
-        }
-    }
-    catch (const SettingNotFoundException& e)
-    {
-        LOG_WARN(m_logger, "Canont find section '%s' in configuration. Default values will be used", section.c_str());
-    }
-    if (rmqCfg.m_exchangeName.empty())
-    {
-        LOG_ERROR(m_logger, "Configuration is invalid: exchange is empty");
-        return Result::CFG_INVALID;
-    }
-    if (rmqCfg.m_routingKey.empty())
-    {
-        LOG_ERROR(m_logger, "Configuration is invalid: routing key is empty");
-        return Result::CFG_INVALID;
-    }
-    LOG_INFO(m_logger, "Configuration parameters: <exchange: %s, key: %s>",
-        rmqCfg.m_exchangeName.c_str(), rmqCfg.m_routingKey.c_str());
-    return Result::SUCCESS;
-}
-
-Result Application::readRmqConsumerCfg(
-    RmqConsumerCfg& rmqCfg,
-    libconfig::Config& cfg,
-    const std::string& section)
-{
-    using namespace libconfig;
-
-    Result res = readRmqHandlerCfg(rmqCfg, cfg, section);
-    if (Result::SUCCESS != res)
-    {
-        return res;
-    }
-
-    try
-    {
-        Setting& setting = cfg.lookup(section);
-        if (!setting.lookupValue("queue", rmqCfg.m_queueName))
-        {
-            LOG_WARN(m_logger, "Canont find 'queue' parameter in configuration. Default value will be used");
-        }
-    }
-    catch (const SettingNotFoundException& e)
-    {
-        LOG_WARN(m_logger, "Canont find section '%s' in configuration. Default values will be used", section.c_str());
-    }
-    if (rmqCfg.m_queueName.empty())
-    {
-        LOG_ERROR(m_logger, "Configuration is invalid: queue is empty");
-        return Result::CFG_INVALID;
-    }
-    LOG_INFO(m_logger, "Configuration parameters: <queue: %s>", rmqCfg.m_queueName.c_str());
-    return Result::SUCCESS;
-}
-
-Result Application::prepareExchangeQueue(
-    rabbitmq::Handler& handler,
-    const RmqConsumerCfg& cfg)
-{
-    Result res = handler.declareExchangeSync(cfg.m_exchangeName, AMQP::fanout);
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot declare exchange '%s'", cfg.m_exchangeName.c_str());
-        return res;
-    }
-    res = handler.declareQueueSync(cfg.m_queueName);
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot declare queue '%s'", cfg.m_queueName.c_str());
-        return res;
-    }
-    res = handler.bindQueueSync(cfg.m_exchangeName, cfg.m_queueName, cfg.m_routingKey);
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot bind queue '%s' to exchange '%s' with key '%s'",
-            cfg.m_exchangeName.c_str(), cfg.m_queueName.c_str(), cfg.m_routingKey.c_str());
-        return res;
-    }
-    return Result::SUCCESS;
 }
 
 } // namespace app

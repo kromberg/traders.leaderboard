@@ -21,7 +21,7 @@ void signalHandler(int s)
 {
     fprintf(stderr, "Caught signal %d\n",s);
 
-    app::Application& application = app::Application::getInstance();
+    app::Application& application = app::Application::instance();
     application.stop();
     application.deinitialize();
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
         return 3;
     }
 
-    app::Application& application = app::Application::getInstance();
+    app::Application& application = app::Application::instance();
     Result res = application.initialize();
     if (Result::SUCCESS != res)
     {

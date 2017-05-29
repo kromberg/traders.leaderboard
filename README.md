@@ -25,7 +25,7 @@ l.deinitialize();
 # Leaderboard application
 ## Initialization
 ```c++
-app::Application& application = app::Application::getInstance();
+app::Application& application = app::Application::instance();
 Result res = application.initialize();
 if (Result::SUCCESS != res)
 {

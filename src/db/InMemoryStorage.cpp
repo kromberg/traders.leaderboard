@@ -25,7 +25,7 @@ InMemoryStorage::InMemoryStorage()
     m_logger = logger::Logger::getLogCategory("DB_IN_MEM");
 }
 
-Result InMemoryStorage::configure(libconfig::Config& cfg)
+Result InMemoryStorage::configure(const libconfig::Config& cfg)
 {
     if (State::CREATED != m_state)
     {

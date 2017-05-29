@@ -40,7 +40,7 @@ MongodbStorage::MongodbStorage()
     m_logger = logger::Logger::getLogCategory("DB_MONGO");
 }
 
-Result MongodbStorage::configure(libconfig::Config& cfg)
+Result MongodbStorage::configure(const libconfig::Config& cfg)
 {
     using namespace libconfig;
 
@@ -57,7 +57,7 @@ Result MongodbStorage::configure(libconfig::Config& cfg)
     m_connectedUsersCollectionName = "connected_users";
     try
     {
-        Setting& setting = cfg.lookup("db");
+        const Setting& setting = cfg.lookup("db");
         if (!setting.lookupValue("address", m_uri))
         {
             LOG_WARN(m_logger, "Canont find 'address' parameter in configuration. Default value will be used");

@@ -47,7 +47,7 @@ public:
     virtual ~Logic();
 
     Result initialize();
-    Result configure(libconfig::Config& cfg);
+    Result configure(const libconfig::Config& cfg);
     Result start();
     void stop();
     void deinitialize();

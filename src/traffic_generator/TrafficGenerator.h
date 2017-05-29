@@ -8,6 +8,8 @@
 #include <rabbitmq/EventLoop.h>
 #include <logger/LoggerFwd.h>
 #include <common/Types.h>
+#include <app/ApplicationBase.h>
+#include <app/Configuration.h>
 #include "Configuration.h"
 
 namespace tg
@@ -15,18 +17,23 @@ namespace tg
 using common::State;
 using common::Result;
 
-class Generator
+class Generator : public app::ApplicationBase
 {
 private:
-    logger::CategoryPtr m_logger;
-
-    State m_state = State::CREATED;
     Configuration m_cfg;
-    rabbitmq::EventLoop m_eventLoop;
+
     rabbitmq::PublisherPtr m_publisher;
+    app::RmqHandlerCfg m_publisherCfg;
 
 private:
     Generator();
+
+    virtual Result doInitialize() override;
+    virtual Result doConfigure(const libconfig::Config& cfg) override;
+    virtual Result doStart() override;
+    virtual void doStop() override;
+    virtual void doDeinitialize() override;
+
 public:
     ~Generator();
     Generator(const Generator&) = delete;
@@ -34,12 +41,6 @@ public:
     Generator& operator=(const Generator&) = delete;
     Generator& operator=(Generator&&) = delete;
     static Generator& instance();
-
-    Result initialize();
-    Result configure(const std::string& filename = "cfg.cfg");
-    Result start();
-    void stop();
-    void deinitialize();
 
     Result writeData();
 };

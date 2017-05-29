@@ -52,7 +52,7 @@ public:
     Storage() = default;
     virtual ~Storage() = default;
 
-    virtual Result configure(libconfig::Config& cfg) = 0;
+    virtual Result configure(const libconfig::Config& cfg) = 0;
     virtual Result start() = 0;
 
     virtual Result storeUser(const int64_t id, const std::string& name) = 0;
@@ -76,7 +76,7 @@ inline Storage::Type Storage::typeFromString(const std::string& tmpTypeStr)
     static const std::unordered_map<std::string, Type> stringToTypeMap =
     {
         {"inmemory",    Type::IN_MEMORY},
-        {"in-memory",   Type::IN_MEMORY},
+        {"in_memory",   Type::IN_MEMORY},
         {"in-memory",   Type::IN_MEMORY},
         {"mongo",       Type::MONGODB},
         {"mongodb",     Type::MONGODB},

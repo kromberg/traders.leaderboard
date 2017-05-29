@@ -53,7 +53,7 @@ public:
     InMemoryStorage();
     virtual ~InMemoryStorage() = default;
 
-    virtual Result configure(libconfig::Config& cfg) override;
+    virtual Result configure(const libconfig::Config& cfg) override;
     virtual Result start() override;
 
     virtual Result storeUser(const int64_t id, const std::string& name) override;

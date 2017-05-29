@@ -19,10 +19,10 @@ Result Handler::initialize()
 
     Result res = Result::SUCCESS;
 
-    res = customInitialize();
+    res = doInitialize();
     if (Result::SUCCESS != res)
     {
-        LOG_ERROR(m_logger, "Custom initialize was failed with result %d(%s)",
+        LOG_ERROR(m_logger, "do initialize was failed with result %d(%s)",
             static_cast<int32_t>(res), resultToStr(res));
         return res;
     }
@@ -30,7 +30,7 @@ Result Handler::initialize()
     return Result::SUCCESS;
 }
 
-Result Handler::configure(libconfig::Config& cfg)
+Result Handler::configure(const libconfig::Config& cfg)
 {
     using namespace libconfig;
 
@@ -45,7 +45,7 @@ Result Handler::configure(libconfig::Config& cfg)
     std::string addressString("amqp://guest:guest@localhost:5672/");
     try
     {
-        Setting& setting = cfg.lookup("rabbitmq");
+        const Setting& setting = cfg.lookup("rabbitmq");
         if (!setting.lookupValue("address", addressString))
         {
             LOG_WARN(m_logger, "Canont find 'address' parameter in configuration. Default value will be used");
@@ -65,10 +65,10 @@ Result Handler::configure(libconfig::Config& cfg)
 
     m_address.reset(new AMQP::Address(addressString));
 
-    res = customConfigure(cfg);
+    res = doConfigure(cfg);
     if (Result::SUCCESS != res)
     {
-        LOG_ERROR(m_logger, "Custom configuration was failed with result %d(%s)",
+        LOG_ERROR(m_logger, "do configuration was failed with result %d(%s)",
             static_cast<int32_t>(res), resultToStr(res));
         return res;
     }
@@ -112,10 +112,10 @@ Result Handler::start()
         return res;
     }
 
-    res = customStart();
+    res = doStart();
     if (Result::SUCCESS != res)
     {
-        LOG_ERROR(m_logger, "Custom start was failed with result %d(%s)",
+        LOG_ERROR(m_logger, "do start was failed with result %d(%s)",
             static_cast<int32_t>(res), resultToStr(res));
         return res;
     }
@@ -130,7 +130,7 @@ void Handler::stop()
         return ;
     }
 
-    customStop();
+    doStop();
 
     m_channel->close();
     m_channel.reset();
@@ -147,33 +147,33 @@ void Handler::deinitialize()
         return ;
     }
 
-    customDeinitialize();
+    doDeinitialize();
 
     m_state = State::DEINITIALIZED;
     return ;
 }
 
-Result Handler::customInitialize()
+Result Handler::doInitialize()
 {
     return Result::SUCCESS;
 }
 
-Result Handler::customConfigure(libconfig::Config&)
+Result Handler::doConfigure(const libconfig::Config&)
 {
     return Result::SUCCESS;
 }
 
-Result Handler::customStart()
+Result Handler::doStart()
 {
     return Result::SUCCESS;
 }
 
-void Handler::customStop()
+void Handler::doStop()
 {
     return ;
 }
 
-void Handler::customDeinitialize()
+void Handler::doDeinitialize()
 {
     return ;
 }

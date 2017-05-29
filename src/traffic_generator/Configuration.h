@@ -6,26 +6,28 @@
 
 #include <libconfig.h++>
 
+#include <common/Types.h>
+
 namespace tg
 {
+using common::Result;
+
 struct Configuration
 {
     uint32_t m_usersCount = 1000;
     uint32_t m_dealsPerUser = 10;
     uint32_t m_transactionSize = 100;
-    std::string m_exchangeName = "leaderboard-users";
-    std::string m_routingKey = "user-key";
 
-    bool read(libconfig::Config& cfg, logger::CategoryPtr log);
+    Result read(const libconfig::Config& cfg, logger::CategoryPtr& log);
 };
 
-inline bool Configuration::read(libconfig::Config& cfg, logger::CategoryPtr log)
+inline Result Configuration::read(const libconfig::Config& cfg, logger::CategoryPtr& log)
 {
     using namespace libconfig;
 
     try
     {
-        Setting& setting = cfg.lookup("tg");
+        const Setting& setting = cfg.lookup("tg");
 
         if (!setting.lookupValue("users-count", m_usersCount))
         {
@@ -39,26 +41,16 @@ inline bool Configuration::read(libconfig::Config& cfg, logger::CategoryPtr log)
         {
             LOG_WARN(log, "Canont find 'transaction-size' parameter in configuration. Default value will be used");
         }
-        if (!setting.lookupValue("tg.exchange", m_exchangeName))
-        {
-            LOG_WARN(log, "Canont find 'tg.exchange' parameter in configuration. Default value will be used");
-        }
-        if (!setting.lookupValue("tg.routing-key", m_routingKey))
-        {
-            LOG_WARN(log, "Canont find 'tg.routing-key' parameter in configuration. Default value will be used");
-        }
     }
     catch (const SettingNotFoundException& e)
     {
         LOG_WARN(log, "Canont find section 'tg' in configuration. Default values will be used");
     }
 
-    LOG_INFO(log, "Traffic generator configuration: <users-count: %lu, deals-per-user: %lu, transaction-size: %lu, "
-        "exchange: %s, routing-key: %s>",
-        m_usersCount, m_dealsPerUser, m_transactionSize,
-        m_exchangeName.c_str(), m_routingKey.c_str());
+    LOG_INFO(log, "Traffic generator configuration: <users-count: %u, deals-per-user: %u, transaction-size: %u>",
+        m_usersCount, m_dealsPerUser, m_transactionSize);
 
-    return true;
+    return Result::SUCCESS;
 }
 
 } // namespace tg

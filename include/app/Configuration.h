@@ -3,8 +3,17 @@
 
 #include <string>
 
+#include "../common/Types.h"
+#include "../logger/LoggerFwd.h"
+
+namespace libconfig
+{
+class Config;
+} // namespace libconfig
+
 namespace app
 {
+using common::Result;
 
 struct RmqHandlerCfg
 {
@@ -19,6 +28,8 @@ struct RmqHandlerCfg
         m_exchangeName(std::forward<T1>(exchangeName)),
         m_routingKey(std::forward<T2>(routingKey))
     {}
+
+    Result read(const libconfig::Config& cfg, const std::string& section, logger::CategoryPtr& log);
 };
 
 struct RmqConsumerCfg : public RmqHandlerCfg
@@ -30,6 +41,8 @@ struct RmqConsumerCfg : public RmqHandlerCfg
         RmqHandlerCfg(std::forward<T1>(exchangeName), std::forward<T2>(routingKey)),
         m_queueName(std::forward<T3>(queueName))
     {}
+
+    Result read(const libconfig::Config& cfg, const std::string& section, logger::CategoryPtr& log);
 };
 
 } // namespace app

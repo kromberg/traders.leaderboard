@@ -16,10 +16,14 @@ list(APPEND LIBS ${LIB_AMQPCPP})
 find_library(LIB_CONFIG config++)
 list(APPEND LIBS ${LIB_CONFIG})
 find_library(LIB_MONGO_CXX mongocxx)
+list(APPEND LIBS ${LIB_MONGO_CXX})
 find_library(LIB_BSON_CXX bsoncxx)
+list(APPEND LIBS ${LIB_BSON_CXX})
 
 # do not add the whole src directory
-list(APPEND SRC_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src/common
+list(APPEND SRC_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src/app
+                     ${CMAKE_CURRENT_SOURCE_DIR}/src/db
+                     ${CMAKE_CURRENT_SOURCE_DIR}/src/common
                      ${CMAKE_CURRENT_SOURCE_DIR}/src/logger
                      ${CMAKE_CURRENT_SOURCE_DIR}/src/rabbitmq)
 
