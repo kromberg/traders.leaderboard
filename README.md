@@ -1,7 +1,7 @@
 # Leaderboard application
 ## Pre-requisites
 This application depends on the following packages:
- * cmake
+ * [CMake](https://cmake.org/)
  * [AMQP-CPP](https://github.com/CopernicaMarketingSoftware/AMQP-CPP)
  * [mongo-c-driver](https://github.com/mongodb/mongo-c-driver)
  * [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver)
