@@ -17,8 +17,10 @@ enum class Level : uint8_t
     WARN    = 1,
     INFO    = 2,
     DEBUG   = 3,
+    UNKNOWN,
 };
 
+Level levelFromStr(const std::string& str);
 const char* levelToStr(const Level level);
 
 } // namespace logger

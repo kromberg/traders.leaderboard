@@ -39,4 +39,5 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/leaderboard_app)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/traffic_generator)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/cfg.cfg DESTINATION ${CMAKE_BINARY_DIR})
+file(GLOB CONFIGURATION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*.cfg")
+file(COPY ${CONFIGURATION_FILES} DESTINATION ${CMAKE_BINARY_DIR})

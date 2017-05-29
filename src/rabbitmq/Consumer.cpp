@@ -37,8 +37,8 @@ void Consumer::onMessageCallback(
     if (Result::SUCCESS != r)
     {
         channel().reject(deliveryTag);
-        LOG_ERROR(m_logger, "Cannot process message '%s' to processor. Result: %u(%s)",
-            messageString.c_str());
+        LOG_ERROR(m_logger, "Cannot process message. Result: %d(%s)",
+            static_cast<int32_t>(r), common::resultToStr(r));
         return ;
     }
 

@@ -33,6 +33,8 @@ Result Application::initialize()
         return Result::INVALID_STATE;
     }
 
+    LOG_INFO(m_logger, "Application initialization started");
+
     m_publisher.reset(new rabbitmq::Publisher(m_eventLoop));
     Result res = m_publisher->initialize();
     if (Result::SUCCESS != res)
@@ -51,6 +53,8 @@ Result Application::initialize()
     }
 
     m_state = State::INITIALIZED;
+
+    LOG_INFO(m_logger, "Application initialization finished");
     return Result::SUCCESS;
 }
 
@@ -65,6 +69,8 @@ Result Application::configure(const std::string& filename)
             static_cast<int32_t>(m_state), common::stateToStr(m_state));
         return Result::INVALID_STATE;
     }
+
+    LOG_INFO(m_logger, "Application configuration started");
 
     Config cfg;
     try
@@ -82,7 +88,7 @@ Result Application::configure(const std::string& filename)
             "Default values will be used", e.what());
     }
 
-    uint64_t consumersCount = 1;
+    uint64_t consumersCount = 2;
     try
     {
         Setting& setting = cfg.lookup("application");
@@ -100,6 +106,7 @@ Result Application::configure(const std::string& filename)
         LOG_ERROR(m_logger, "Configuration is invalid: consumers_count is less than 1");
         return Result::CFG_INVALID;
     }
+    LOG_INFO(m_logger, "Configuration parameters: <consumers_count = %lu>", consumersCount);
 
     Result res = readRmqConsumerCfg(
         m_consumerCfg,
@@ -123,10 +130,12 @@ Result Application::configure(const std::string& filename)
         return res;
     }
 
-    m_consumers.resize(consumersCount, std::make_shared<rabbitmq::Consumer>(m_eventLoop));
+    m_consumers.resize(consumersCount);
     
     for (auto&& consumer : m_consumers)
     {
+        consumer = std::make_shared<rabbitmq::Consumer>(m_eventLoop);
+
         res = consumer->initialize();
         if (Result::SUCCESS != res)
         {
@@ -163,6 +172,8 @@ Result Application::configure(const std::string& filename)
     }
 
     m_state = State::CONFIGURED;
+
+    LOG_INFO(m_logger, "Application configuration finished");
     return Result::SUCCESS;
 }
 
@@ -174,6 +185,8 @@ Result Application::start()
             static_cast<int32_t>(m_state), common::stateToStr(m_state));
         return Result::INVALID_STATE;
     }
+
+    LOG_INFO(m_logger, "Application start started");
 
     m_eventLoop.start();
 
@@ -236,6 +249,8 @@ Result Application::start()
     m_logic.registerPublisher(m_publisher, m_publisherCfg);
 
     m_state = State::STARTED;
+
+    LOG_INFO(m_logger, "Application start finished");
     return Result::SUCCESS;
 }
 
@@ -245,6 +260,8 @@ void Application::stop()
     {
         return ;
     }
+
+    LOG_INFO(m_logger, "Application stop started");
 
     m_logic.stop();
     m_publisher->stop();
@@ -256,6 +273,7 @@ void Application::stop()
     m_eventLoop.stop();
 
     m_state = State::STOPPED;
+    LOG_INFO(m_logger, "Application stop finished");
     return ;
 }
 
@@ -266,6 +284,8 @@ void Application::deinitialize()
         return ;
     }
 
+    LOG_INFO(m_logger, "Application deinitialization started");
+
     m_publisher->deinitialize();
     for (auto&& consumer : m_consumers)
     {
@@ -273,6 +293,8 @@ void Application::deinitialize()
     }
 
     m_state = State::DEINITIALIZED;
+
+    LOG_INFO(m_logger, "Application deinitialization finished");
     return ;
 }
 

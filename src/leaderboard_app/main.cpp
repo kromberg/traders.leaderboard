@@ -35,7 +35,8 @@ int main(int argc, char* argv[])
 {
     if (argc < 2)
     {
-        fprintf(stderr, "Invalid format ");
+        fprintf(stderr, "Invalid format. Configuration file must be specified.\n");
+        fprintf(stderr, "Example: %s cfg.cfg\n", argv[0]);
         return 2;
     }
 
@@ -53,8 +54,6 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Cannot initialize logger\n");
         return 3;
     }
-
-    logger::CategoryPtr log = logger::Logger::getLogCategory("MAIN");
 
     app::Application& application = app::Application::getInstance();
     Result res = application.initialize();

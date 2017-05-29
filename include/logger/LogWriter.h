@@ -1,8 +1,11 @@
 #ifndef LOGGER_WRITER_H
 #define LOGGER_WRITER_H
 
+#include <atomic>
 #include <string>
 #include <cstdio>
+
+#include <libconfig.h++>
 
 #include "LoggerFwd.h"
 
@@ -18,12 +21,18 @@ public:
         FILE    = 0,
         STDOUT  = 1,
         STDERR  = 2,
+        UNKNOWN,
     };
+    static const char* typeToStr(const Type t);
+    static Type typeFromStr(const std::string& str);
+
 private:
     Level m_level = Level::DEBUG;
     Type m_type = Type::STDERR;
     std::string m_filename;
     FILE* m_file;
+
+    void checkFile();
 
     template<class... Args>
     void write(const Level level, const std::string& fmt, Args ... args);
@@ -38,7 +47,7 @@ public:
 
     const Level level() const;
 
-    bool configure(const std::string& filename);
+    bool configure(libconfig::Config& cfg);
     bool start();
     void stop();
 };

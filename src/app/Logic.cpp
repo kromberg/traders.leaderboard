@@ -139,8 +139,13 @@ Result Logic::initialize()
     {
         return Result::INVALID_STATE;
     }
+
+    LOG_INFO(m_logger, "Logic initialization started");
+
     m_parser.registerCallbackObject(*this);
     m_state = State::INITIALIZED;
+
+    LOG_INFO(m_logger, "Logic initialization finished");
     return Result::SUCCESS;
 }
 
@@ -152,6 +157,8 @@ Result Logic::configure(libconfig::Config& cfg)
     {
         return Result::INVALID_STATE;
     }
+
+    LOG_INFO(m_logger, "Logic configuration started");
 
     m_loopIntervalSeconds = 60;
     try
@@ -209,6 +216,8 @@ Result Logic::configure(libconfig::Config& cfg)
     }
 
     m_state = State::CONFIGURED;
+
+    LOG_INFO(m_logger, "Logic configuration finished");
     return Result::SUCCESS;
 }
 
@@ -221,6 +230,8 @@ Result Logic::start()
         return Result::INVALID_STATE;
     }
 
+    LOG_INFO(m_logger, "Logic start started");
+
     Result res = m_storage->start();
     if (Result::SUCCESS != res)
     {
@@ -231,6 +242,8 @@ Result Logic::start()
     std::thread loopThread(&Logic::loop, this);
     swap(loopThread, m_loopThread);
     m_state = State::STARTED;
+
+    LOG_INFO(m_logger, "Logic start finished");
     return Result::SUCCESS;
 }
 
@@ -240,9 +253,13 @@ void Logic::stop()
     {
         return ;
     }
+
+    LOG_INFO(m_logger, "Logic stop started");
     m_loopIsRunning = false;
     m_loopThread.join();
     m_state = State::STOPPED;
+
+    LOG_INFO(m_logger, "Logic stop finished");
 }
 
 void Logic::deinitialize()
@@ -251,7 +268,9 @@ void Logic::deinitialize()
     {
         return ;
     }
+    LOG_INFO(m_logger, "Logic deinitialization started");
     m_state = State::DEINITIALIZED;
+    LOG_INFO(m_logger, "Logic deinitialization finished");
 }
 
 // user_registered(id,name)
