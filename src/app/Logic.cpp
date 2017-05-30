@@ -63,7 +63,7 @@ void Logic::loopFunc(const time_t startTime)
         return ;
     }
 
-    db::UserLeaderboards leaderboards;
+    db::Leaderboards leaderboards;
     Result res = m_storage->getLeaderboards(leaderboards, 10, 10, 10);
     if (Result::SUCCESS != res)
     {
@@ -71,22 +71,35 @@ void Logic::loopFunc(const time_t startTime)
         return;
     }
 
-    std::string message;
-    message += "{";
-    message += "\"time\":";
-    message += "\"";
-    message += common::timeToString(startTime);
-    message += "\",";
-    message += "\"leaderboards\":[";
+    res = m_publisher->startTransactionSync();
+    if (Result::SUCCESS != res)
+    {
+        LOG_ERROR(m_logger, "Cannot start transaction");
+        return ;
+    }
 
     for (auto&& userLb : leaderboards)
     {
+        std::string message;
         message += "{\"id\":";
-        message += std::to_string(userLb.first);
+        message += std::to_string(userLb.first.m_id);
         message += ",";
-        message += "\"users\":[";
+        message += "\"name\":";
+        message += "\"";
+        message += userLb.first.m_name;
+        message += "\"";
+        message += ",";
 
-        LOG_DEBUG(m_logger, "User %ld leaderboard:", userLb.first);
+        message += "\"leaderboard\":";
+        message += "{";
+        message += "\"time\":";
+        message += "\"";
+        message += common::timeToString(startTime);
+        message += "\"";
+        message += ",";
+        message += "\"scores\":";
+        message += "[";
+        LOG_DEBUG(m_logger, "User %ld:%s leaderboard:", userLb.first.m_id, userLb.first.m_name.c_str());
         for (auto&& scoreUser : userLb.second)
         {
             LOG_DEBUG(m_logger, "\t%015ld -> <%ld, %s>",
@@ -104,25 +117,18 @@ void Logic::loopFunc(const time_t startTime)
             message += std::to_string(scoreUser.first);
             message += "},";
         }
+        // remove comma
         message.pop_back();
         message += "]";
-        message += "},";
-    }
-    message.pop_back();
-    message += "]}";
+        message += "}";
+        message += "}";
 
-    // send message
-    res = m_publisher->startTransactionSync();
-    if (Result::SUCCESS != res)
-    {
-        LOG_ERROR(m_logger, "Cannot start transaction");
-        return ;
-    }
-
-    if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, message))
-    {
-        LOG_ERROR(m_logger, "Cannot publish message");
-        return ;
+        // send message
+        if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, message))
+        {
+            LOG_ERROR(m_logger, "Cannot publish message");
+            return ;
+        }
     }
 
     res = m_publisher->commitTransactionSync();

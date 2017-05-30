@@ -38,6 +38,8 @@ private:
 private:
     std::unordered_set<int64_t> getConnectedUsers() const;
 
+    Result getUser(User& user, const int64_t id, mongocxx::collection& collection) const;
+
 public:
     MongodbStorage();
     virtual ~MongodbStorage() = default;

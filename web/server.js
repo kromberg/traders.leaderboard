@@ -21,14 +21,41 @@ app.use(express.static('public'));
 app.set('views', __dirname + '/public');
 app.set('view engine', 'pug');
 
-var leaderboards_trend = []
+var leaderboards = {
+    obj: {},
+
+    add: function(leaderboard_obj, limit) {
+        if (!this.obj.hasOwnProperty(leaderboard_obj.id)) {
+            this.obj[leaderboard_obj.id] = {}
+            tmp_leaderboard_obj = this.obj[leaderboard_obj.id]
+            tmp_leaderboard_obj.id = leaderboard_obj.id
+            tmp_leaderboard_obj.name = leaderboard_obj.name
+            tmp_leaderboard_obj.trend = []
+        }
+        else {
+            tmp_leaderboard_obj = this.obj[leaderboard_obj.id]
+        }
+        tmp_leaderboard_obj.trend.push(leaderboard_obj.leaderboard)
+    }
+}
 
 //req.session
 
-// process index.html
-app.get('/', function (req, res) {
+function leaderboards_req(req, res) {
     // render
-    res.render('index', { 'leaderboards_trend' : leaderboards_trend})
+    res.render('index', { 'leaderboards_obj' : leaderboards.obj})
+}
+
+// process index.html
+app.get('/', leaderboards_req)
+app.get('/leaderboards', leaderboards_req)
+app.get('/leaderboard/:user_id', function (req, res, next) {
+    var user_id = req.params.user_id
+    if (!leaderboards.obj.hasOwnProperty(user_id)) {
+        return next("Cannot find leaderboard for user " + user_id)
+    }
+    // render
+    res.render('index', { 'leaderboards_obj' : leaderboards.obj, 'leaderboard' : leaderboards.obj[user_id]})
 })
 
 function guid() {
@@ -105,28 +132,19 @@ function amqp_start(amqp_cfg, msg_callback) {
     });
 }
 
-process.on('exit', function() {
-    
-});
-
 process.on('uncaughtException', function(err) {
     console.log(err);
     process.exit(1)
 })
 
-function push_leaderboard(leaderboards_trend, leaderboards_obj, limit) {
-    leaderboards_trend.push(leaderboards_obj)
-    // if (leaderboards.length
-}
-
 var server = app.listen(8080, function () {
     amqp_cfg = read_amqp_config()
     amqp_start(amqp_cfg, function(msg) {
         if (msg !== null) {
-            leaderboards_obj = JSON.parse(msg.content.toString())
-            console.log(leaderboards_obj);
+            leaderboard_obj = JSON.parse(msg.content.toString())
+            console.log(leaderboard_obj)
 
-            push_leaderboard(leaderboards_trend, leaderboards_obj, 100)
+            leaderboards.add(leaderboard_obj, 100)
 
             channel.ack(msg);
         }

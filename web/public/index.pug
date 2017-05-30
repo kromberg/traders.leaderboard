@@ -1,52 +1,44 @@
 doctype html
 
-html(lang="en")
+html(lang='en')
     head
         meta(charset='utf-8')
         title Leaderboard
         meta(name='viewport', content='width=device-width, initial-scale=1')
         script(src='/listjs/list.js')
-        link(rel='stylesheet', href='/css/list.css')
-        link(rel='stylesheet', href='/material-css/css/materialize.css')
-        
+        script(src='https://code.jquery.com/jquery-2.1.1.min.js')
+        script(src='/material-css/js/materialize.js')
+        link(rel='stylesheet', href='http://fonts.googleapis.com/icon?family=Material+Icons')
+        link(rel='stylesheet', href='/material-css/css/materialize.css' media='screen,projection')
+        link(rel='stylesheet', href='/css/style.css')
+        meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    body(class='teal lighten-4')
+        div(class='card-panel teal lighten-2')
+            a(href='/leaderboards')
+                h2(class='white-text') Leaderboard
+            if leaderboard
+                h5(class='white-text') #{leaderboard.name}
+            else
+                br
 
-    body
-        div(id='leaderboards-list')
-            input(class='search')
-            button(class='sort' data-sort='id') Sort by id
-            button(class='sort' data-sort='name') Sort by name
-            ul(class='list' class='collection')
-                li(href='#!' class='collection-item')
-                    h3(class='name') Johny
-                    p(class='id') 1
-                li(href='#!' class='collection-item')
-                    h3(class='name') Jonas
-                    p(class='id') 2
-                li(href='#!' class='collection-item')
-                    h3(class='name') ARR
-                    p(class='id') 4
-                li(href='#!' class='collection-item')
-                    h3(class='name') Bas
-                    p(class='id') 3
-        script(src='/scripts/leaderboard.list.js')
+        div(class='row')
+            div(class='col s3')
+                div(id='leaderboards-list')
+                    div(class='input-field')
+                        input(id='leaderboard-search' placeholder='Filter' type='text' class='search')
+                    div(class='list collection')
+                        each leaderboard_obj in leaderboards_obj
+                            a(class='collection-item teal darken-4' href='/leaderboard/' + leaderboard_obj.id)
+                                h5(class='name white-text') #{leaderboard_obj.name}
+                                p(class='id white-text') id=#{leaderboard_obj.id}
+                script(src='/scripts/leaderboard.list.js')
 
-
-//-
-        each leaderboards_obj in leaderboards_trend
-            h1 #{leaderboards_obj.time}
-                each leaderboard_obj in leaderboards_obj.leaderboards
-                    h2 #{leaderboard_obj.id}
-                    div(class='container')
-                        div(class='table-responsive')
-                            table(class='table')
-                                thead
-                                    tr
-                                        th ID
-                                        th Name
-                                        th Score
-                                each user in leaderboard_obj.users
-                                    tbody
-                                        tr
-                                            th #{user.id}
-                                            th #{user.name}
-                                            th #{user.score}
+            if leaderboard
+                div(class='col s9')
+                    div(class='collection')
+                        each leaderboard_trend in leaderboard.trend
+                            each user_score in leaderboard_trend.scores
+                                div(class='collection-item card-panel teal')
+                                    h5 #{user_score.name}
+                                    p #{user_score.id}
+                                    p #{user_score.score}

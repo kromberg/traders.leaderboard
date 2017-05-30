@@ -202,7 +202,10 @@ Result InMemoryStorage::getLeaderboards(
 
     if (count <= 0)
     {
-        leaderboards.emplace(-1, std::move(tmpLeaderboard));
+        leaderboards.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(-1, "Top"),
+            std::forward_as_tuple(std::move(tmpLeaderboard)));
     }
     else
     {
@@ -212,7 +215,7 @@ Result InMemoryStorage::getLeaderboards(
 
         leaderboards.emplace(
             std::piecewise_construct,
-            std::forward_as_tuple(-1),
+            std::forward_as_tuple(-1, "Top"),
             std::forward_as_tuple(begin, end));
     }
 
@@ -222,40 +225,51 @@ Result InMemoryStorage::getLeaderboards(
     }
 
     Leaderboard currentLeaderboard;
-    std::unordered_map<int64_t, uint16_t> currentIdsToCount;
+    std::map<User, uint16_t> userToCount;
     for (auto&& lbItem : tmpLeaderboard)
     {
         currentLeaderboard.emplace(lbItem);
 
-        auto currentIdIt = currentIdsToCount.begin();
-        while (currentIdIt != currentIdsToCount.end())
+        auto userToCountIt = userToCount.begin();
+        while (userToCountIt != userToCount.end())
         {
-            auto lbIt = leaderboards.find(currentIdIt->first);
+            auto lbIt = leaderboards.find(userToCountIt->first);
             if (leaderboards.end() == lbIt)
             {
-                LOG_ERROR(m_logger, "Cannot find leaderboard for user %ld", lbIt->first);
-                ++ currentIdIt;
+                LOG_ERROR(m_logger, "Cannot find leaderboard for user %ld:%s",
+                    userToCountIt->first.m_id, userToCountIt->first.m_name.c_str());
+                ++ userToCountIt;
                 continue;
             }
             lbIt->second.emplace(lbItem);
 
-            if (currentIdIt->second + 1 >= after)
+            if (userToCountIt->second + 1 >= after)
             {
-                currentIdIt = currentIdsToCount.erase(currentIdIt);
+                userToCountIt = userToCount.erase(userToCountIt);
             }
             else
             {
-                ++ currentIdIt->second;
-                ++ currentIdIt;
+                ++ userToCountIt->second;
+                ++ userToCountIt;
             }
         }
 
         auto idIt = connectedUsers.find(lbItem.second.m_id);
         if (connectedUsers.end() != idIt)
         {
-            LOG_DEBUG(m_logger, "User %ld found: adding leaderboard", *idIt);
-            currentIdsToCount.emplace(*idIt, 0);
-            leaderboards.emplace(*idIt, currentLeaderboard);
+            User user;
+            Result res = getUser(user, *idIt);
+            if (Result::SUCCESS != res)
+            {
+                LOG_ERROR(m_logger, "Cannot find user with id %ld. Result: %d(%s)",
+                    *idIt, static_cast<int32_t>(res), common::resultToStr(res));
+            }
+            else
+            {
+                LOG_DEBUG(m_logger, "User %ld:%s found: adding leaderboard", user.m_id, user.m_name.c_str());
+                userToCount.emplace(user, 0);
+                leaderboards.emplace(user, currentLeaderboard);
+            }
         }
 
         if (currentLeaderboard.size() > before)

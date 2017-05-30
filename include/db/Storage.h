@@ -24,17 +24,29 @@ struct User
     int64_t m_id;
     std::string m_name;
 
+    User():
+        m_id(-1), m_name("unknown")
+    {}
+
     User(const int64_t id, const std::string& name):
         m_id(id), m_name(name)
     {}
+
+    bool operator<(const User& u) const
+    {
+        return m_id < u.m_id;
+    }
+
+    bool operator<(const int64_t id) const
+    {
+        return m_id < id;
+    }
 };
 
 // score to user
 typedef std::multimap<int64_t, User, std::greater<int64_t> > Leaderboard;
 // user id to leaderboard
-typedef std::unordered_map<int64_t, Leaderboard> UserLeaderboards;
-// user id to leaderboard
-typedef std::unordered_map<int64_t, Leaderboard> Leaderboards;
+typedef std::map<User, Leaderboard> Leaderboards;
 
 class Storage
 {

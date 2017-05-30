@@ -413,10 +413,8 @@ std::unordered_set<int64_t> MongodbStorage::getConnectedUsers() const
     return result;
 }
 
-Result MongodbStorage::getUser(User& user, const int64_t id) const
+Result MongodbStorage::getUser(User& user, const int64_t id, mongocxx::collection& collection) const
 {
-    GET_COLLECTION(m_usersCollectionName);
-
     mongocxx::stdx::optional<bsoncxx::document::value> userRes;
     try
     {
@@ -448,7 +446,7 @@ Result MongodbStorage::getUser(User& user, const int64_t id) const
             return Result::DB_ERROR;
         }
         bsoncxx::document::element name = view["name"];
-        if (id.type() != bsoncxx::type::k_utf8)
+        if (name.type() != bsoncxx::type::k_utf8)
         {
             LOG_ERROR(m_logger, "Cannot get 'name' from the document");
             return Result::DB_ERROR;
@@ -464,6 +462,13 @@ Result MongodbStorage::getUser(User& user, const int64_t id) const
     }
     LOG_DEBUG(m_logger, "Found user: <id: %ld, name: %s>", user.m_id, user.m_name.c_str());
     return Result::SUCCESS;
+}
+
+Result MongodbStorage::getUser(User& user, const int64_t id) const
+{
+    GET_COLLECTION(m_usersCollectionName);
+
+    return getUser(user, id, collection);
 }
 
 Result MongodbStorage::getLeaderboards(
@@ -512,7 +517,7 @@ Result MongodbStorage::getLeaderboards(
 
     Leaderboard tmpLeaderboard;
     Leaderboard currentLeaderboard;
-    std::unordered_map<int64_t, uint16_t> currentIdsToCount;
+    std::map<User, uint16_t> userToCount;
 
     uint64_t goodDocuments = 0;
     uint64_t badDocuments = 0;
@@ -574,14 +579,15 @@ Result MongodbStorage::getLeaderboards(
                     std::forward_as_tuple(score.get_int64()),
                     std::forward_as_tuple(id.get_int64(), name.get_utf8().value.to_string()));
 
-                auto currentIdIt = currentIdsToCount.begin();
-                while (currentIdIt != currentIdsToCount.end())
+                auto userToCountIt = userToCount.begin();
+                while (userToCountIt != userToCount.end())
                 {
-                    auto lbIt = leaderboards.find(currentIdIt->first);
+                    auto lbIt = leaderboards.find(userToCountIt->first);
                     if (leaderboards.end() == lbIt)
                     {
-                        LOG_ERROR(m_logger, "Cannot find leaderboard for user %ld", lbIt->first);
-                        ++ currentIdIt;
+                        LOG_ERROR(m_logger, "Cannot find leaderboard for user %ld:%s",
+                            userToCountIt->first.m_id, userToCountIt->first.m_name.c_str());
+                        ++ userToCountIt;
                         continue;
                     }
                     lbIt->second.emplace(
@@ -589,23 +595,33 @@ Result MongodbStorage::getLeaderboards(
                         std::forward_as_tuple(score.get_int64()),
                         std::forward_as_tuple(id.get_int64(), name.get_utf8().value.to_string()));
 
-                    if (currentIdIt->second + 1 >= after)
+                    if (userToCountIt->second + 1 >= after)
                     {
-                        currentIdIt = currentIdsToCount.erase(currentIdIt);
+                        userToCountIt = userToCount.erase(userToCountIt);
                     }
                     else
                     {
-                        ++ currentIdIt->second;
-                        ++ currentIdIt;
+                        ++ userToCountIt->second;
+                        ++ userToCountIt;
                     }
                 }
 
                 auto idIt = connectedUsers.find(id.get_int64());
                 if (connectedUsers.end() != idIt)
                 {
-                    LOG_DEBUG(m_logger, "User %ld found: adding leaderboard", *idIt);
-                    currentIdsToCount.emplace(*idIt, 0);
-                    leaderboards.emplace(*idIt, currentLeaderboard);
+                    User user;
+                    Result res = getUser(user, *idIt, collection);
+                    if (Result::SUCCESS != res)
+                    {
+                        LOG_ERROR(m_logger, "Cannot find user with id %ld. Result: %d(%s)",
+                            *idIt, static_cast<int32_t>(res), common::resultToStr(res));
+                    }
+                    else
+                    {
+                        LOG_DEBUG(m_logger, "User %ld:%s found: adding leaderboard", user.m_id, user.m_name.c_str());
+                        userToCount.emplace(user, 0);
+                        leaderboards.emplace(user, currentLeaderboard);
+                    }
                 }
 
                 if (currentLeaderboard.size() > before)
@@ -633,7 +649,10 @@ Result MongodbStorage::getLeaderboards(
     }
     LOG_DEBUG(m_logger, "Leaderboard. Processed %lu documents", goodDocuments);
 
-    leaderboards.emplace(-1, std::move(tmpLeaderboard));
+    leaderboards.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(-1, "Top"),
+        std::forward_as_tuple(std::move(tmpLeaderboard)));
 
     return Result::SUCCESS;
 }
