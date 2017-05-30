@@ -35,7 +35,15 @@ var leaderboards = {
         else {
             tmp_leaderboard_obj = this.obj[leaderboard_obj.id]
         }
+        leaderboard_obj.leaderboard.time = Date.parse(leaderboard_obj.leaderboard.time)
         tmp_leaderboard_obj.trend.push(leaderboard_obj.leaderboard)
+        tmp_leaderboard_obj.trend = tmp_leaderboard_obj.trend.sort(function (lhv, rhv) {
+            return lhv.time < rhv.time;
+        })
+
+        while (tmp_leaderboard_obj.trend.length > limit) {
+            tmp_leaderboard_obj.trend.shift()
+        }
     }
 }
 
@@ -142,7 +150,7 @@ var server = app.listen(8080, function () {
             leaderboard_obj = JSON.parse(msg.content.toString())
             //console.log(leaderboard_obj)
 
-            leaderboards.add(leaderboard_obj, 100)
+            leaderboards.add(leaderboard_obj, 2)
 
             channel.ack(msg);
         }
