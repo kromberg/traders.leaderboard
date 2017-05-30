@@ -11,7 +11,16 @@
   color: #757575;
 }
 
-/*.scrollbar {
-    
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.id-text {
+    font-size: 7pt;
+}
+
+.scrollbar {
     overflow-y: auto;
-}*/
+}

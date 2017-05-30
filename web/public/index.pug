@@ -12,12 +12,12 @@ html(lang='en')
         link(rel='stylesheet', href='/material-css/css/materialize.css' media='screen,projection')
         link(rel='stylesheet', href='/css/style.css')
         meta(name='viewport' content='width=device-width, initial-scale=1.0')
-    body(class='teal lighten-4')
-        div(class='card-panel teal lighten-2')
+    body(class='teal lighten-5')
+        div(class='card-panel teal')
             a(href='/leaderboards')
-                h2(class='white-text') Leaderboard
+                h3(class='white-text') Leaderboard
             if leaderboard
-                h5(class='white-text') #{leaderboard.name}
+                h6(class='white-text') #{leaderboard.name}
             else
                 br
 
@@ -26,19 +26,34 @@ html(lang='en')
                 div(id='leaderboards-list')
                     div(class='input-field')
                         input(id='leaderboard-search' placeholder='Filter' type='text' class='search')
-                    div(class='list collection')
+                    div(class='list collection scrollbar')
                         each leaderboard_obj in leaderboards_obj
-                            a(class='collection-item teal darken-4' href='/leaderboard/' + leaderboard_obj.id)
-                                h5(class='name white-text') #{leaderboard_obj.name}
-                                p(class='id white-text') id=#{leaderboard_obj.id}
+                            - var active_class = ''
+                            if leaderboard
+                                if leaderboard_obj.id == leaderboard.id
+                                    - active_class = 'active'
+                            a(class='collection-item card-panel ' + active_class href='/leaderboard/' + leaderboard_obj.id)
+                                h5(class='name black-text') #{leaderboard_obj.name}
+                                p(class='id id-text black-text' __id=leaderboard_obj.id) id=#{leaderboard_obj.id}
                 script(src='/scripts/leaderboard.list.js')
 
             if leaderboard
-                div(class='col s9')
-                    div(class='collection')
+                div(class='col s9 white scrollbar')
+                    form(action='#')
+                        br
+                        p(class='range-field')
+                            input(type='range' id='test5' min='0' max='100')
+                    table(class='bordered')
+                        thead
+                            tr
+                                th(style='width: 15%;') Position
+                                th(style='width: 15%;') ID
+                                th Name
+                                th(style='width: 30%;') Score
                         each leaderboard_trend in leaderboard.trend
                             each user_score in leaderboard_trend.scores
-                                div(class='collection-item card-panel teal')
-                                    h5 #{user_score.name}
-                                    p #{user_score.id}
-                                    p #{user_score.score}
+                                tbody
+                                    th #0
+                                    th #{user_score.id}
+                                    th #{user_score.name}
+                                    th #{user_score.score}
