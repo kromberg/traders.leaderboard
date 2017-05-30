@@ -19,6 +19,8 @@ find_library(LIB_MONGO_CXX mongocxx)
 list(APPEND LIBS ${LIB_MONGO_CXX})
 find_library(LIB_BSON_CXX bsoncxx)
 list(APPEND LIBS ${LIB_BSON_CXX})
+find_library(LIB_PTHREAD pthread)
+list(APPEND LIBS ${LIB_PTHREAD})
 
 # do not add the whole src directory
 list(APPEND SRC_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src/app

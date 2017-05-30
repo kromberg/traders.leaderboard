@@ -53,7 +53,7 @@ html(lang='en')
                         each leaderboard_trend in leaderboard.trend
                             each user_score in leaderboard_trend.scores
                                 tbody
-                                    th #0
+                                    th ##{user_score.position}
                                     th #{user_score.id}
                                     th #{user_score.name}
                                     th #{user_score.score}

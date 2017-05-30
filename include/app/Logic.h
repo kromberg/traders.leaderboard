@@ -28,7 +28,7 @@ class Logic
 private:
     logger::CategoryPtr m_logger;
     State m_state = State::CREATED;
-    int32_t m_loopIntervalSeconds = 5;
+    int32_t m_loopIntervalSeconds = 60;
     volatile bool m_loopIsRunning = false;
     std::thread m_loopThread;
 

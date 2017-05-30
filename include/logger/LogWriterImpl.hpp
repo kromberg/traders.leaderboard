@@ -4,6 +4,7 @@
 #include <cassert>
 #include <ctime>
 #include <chrono>
+#include <algorithm>
 
 #include "../common/Utils.h"
 #include "Logger.h"

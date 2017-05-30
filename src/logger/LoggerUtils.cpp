@@ -1,4 +1,6 @@
 #include <string>
+#include <algorithm>
+
 #include <logger/LoggerFwd.h>
 
 namespace logger

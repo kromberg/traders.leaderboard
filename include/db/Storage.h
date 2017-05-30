@@ -43,8 +43,28 @@ struct User
     }
 };
 
-// score to user
-typedef std::multimap<int64_t, User, std::greater<int64_t> > Leaderboard;
+struct ScorePosition
+{
+    int64_t m_score;
+    int64_t m_position;
+
+    ScorePosition(const int64_t score, const int64_t position):
+        m_score(score), m_position(position)
+    {}
+
+    bool operator<(const ScorePosition& sp) const
+    {
+        return (m_position < sp.m_position) && (m_score < sp.m_score);
+    }
+
+    bool operator>(const ScorePosition& sp) const
+    {
+        return (m_position > sp.m_position) && (m_score > sp.m_score);
+    }
+};
+
+// <score, position> to <user>
+typedef std::multimap<ScorePosition, User, std::greater<ScorePosition> > Leaderboard;
 // user id to leaderboard
 typedef std::map<User, Leaderboard> Leaderboards;
 

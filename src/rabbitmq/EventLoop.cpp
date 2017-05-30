@@ -56,8 +56,7 @@ void EventLoop::add(ConnectionItem& item)
         "fd = %d; flags = %d",
         item.m_connection, item.m_fd, item.m_flags);
 
-    pollfd newfd;
-    memset(&newfd, sizeof(newfd), 0);
+    pollfd newfd = {0};
     newfd.fd = item.m_fd;
     newfd.events = POLLERR | POLLHUP | POLLNVAL;
     if (item.m_flags & AMQP::readable)

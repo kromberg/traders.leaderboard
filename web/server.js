@@ -39,8 +39,6 @@ var leaderboards = {
     }
 }
 
-//req.session
-
 function leaderboards_req(req, res) {
     // render
     res.render('index', { 'leaderboards_obj' : leaderboards.obj})
@@ -142,7 +140,7 @@ var server = app.listen(8080, function () {
     amqp_start(amqp_cfg, function(msg) {
         if (msg !== null) {
             leaderboard_obj = JSON.parse(msg.content.toString())
-            console.log(leaderboard_obj)
+            //console.log(leaderboard_obj)
 
             leaderboards.add(leaderboard_obj, 100)
 

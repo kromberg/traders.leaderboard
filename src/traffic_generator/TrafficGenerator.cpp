@@ -121,7 +121,7 @@ Result Generator::writeData()
     for (size_t i = 0; i < m_cfg.m_usersCount; ++i)
     {
         std::string idStr = std::to_string(i);
-        if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, "user_registered(" + idStr + ",Abuda " + idStr + ")"))
+        if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, "user_registered(" + idStr + ",Egor " + idStr + ")"))
         {
             LOG_ERROR(m_logger, "Cannot publish message");
             return Result::FAILED;

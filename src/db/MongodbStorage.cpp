@@ -517,10 +517,11 @@ Result MongodbStorage::getLeaderboards(
 
     Leaderboard tmpLeaderboard;
     Leaderboard currentLeaderboard;
-    std::map<User, uint16_t> userToCount;
+    std::map<User, uint32_t> userToCount;
 
     uint64_t goodDocuments = 0;
     uint64_t badDocuments = 0;
+    int64_t position = 1;
     try
     {
         for (const bsoncxx::document::view& view : cursor)
@@ -566,17 +567,17 @@ Result MongodbStorage::getLeaderboards(
                 ++ goodDocuments;
 
                 if ((count <= 0) || 
-                    (count > 0 && tmpLeaderboard.size() < count))
+                    (count > 0 && tmpLeaderboard.size() < static_cast<size_t>(count)))
                 {
                     tmpLeaderboard.emplace(
                         std::piecewise_construct,
-                        std::forward_as_tuple(score.get_int64()),
+                        std::forward_as_tuple(score.get_int64(), position),
                         std::forward_as_tuple(id.get_int64(), name.get_utf8().value.to_string()));
                 }
 
                 currentLeaderboard.emplace(
                     std::piecewise_construct,
-                    std::forward_as_tuple(score.get_int64()),
+                    std::forward_as_tuple(score.get_int64(), position),
                     std::forward_as_tuple(id.get_int64(), name.get_utf8().value.to_string()));
 
                 auto userToCountIt = userToCount.begin();
@@ -592,7 +593,7 @@ Result MongodbStorage::getLeaderboards(
                     }
                     lbIt->second.emplace(
                         std::piecewise_construct,
-                        std::forward_as_tuple(score.get_int64()),
+                        std::forward_as_tuple(score.get_int64(), position),
                         std::forward_as_tuple(id.get_int64(), name.get_utf8().value.to_string()));
 
                     if (userToCountIt->second + 1 >= after)
@@ -605,6 +606,7 @@ Result MongodbStorage::getLeaderboards(
                         ++ userToCountIt;
                     }
                 }
+                ++ position;
 
                 auto idIt = connectedUsers.find(id.get_int64());
                 if (connectedUsers.end() != idIt)

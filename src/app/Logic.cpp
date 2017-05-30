@@ -44,7 +44,7 @@ void Logic::loop()
         LOG_INFO(m_logger, "Logic loop was ended at %s. Duration: %u seconds",
             common::timeToString(endTime).c_str(), diffSeconds);
 
-        while (m_loopIsRunning && diffSeconds < m_loopIntervalSeconds)
+        while (m_loopIsRunning && diffSeconds < static_cast<uint32_t>(m_loopIntervalSeconds))
         {
             uint32_t sleepSeconds = std::min(maxSleepSeconds, m_loopIntervalSeconds - diffSeconds);
             LOG_DEBUG(m_logger, "Logic loop will sleep for %u seconds", sleepSeconds);
@@ -102,9 +102,12 @@ void Logic::loopFunc(const time_t startTime)
         LOG_DEBUG(m_logger, "User %ld:%s leaderboard:", userLb.first.m_id, userLb.first.m_name.c_str());
         for (auto&& scoreUser : userLb.second)
         {
-            LOG_DEBUG(m_logger, "\t%015ld -> <%ld, %s>",
-                scoreUser.first, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
+            LOG_DEBUG(m_logger, "\t#%15ld %15ld -> <%ld, %s>",
+                scoreUser.first.m_position, scoreUser.first.m_score, scoreUser.second.m_id, scoreUser.second.m_name.c_str());
             message += "{";
+            message += "\"position\":";
+            message += std::to_string(scoreUser.first.m_position);
+            message += ",";
             message += "\"id\":";
             message += std::to_string(scoreUser.second.m_id);
             message += ",";
@@ -114,7 +117,7 @@ void Logic::loopFunc(const time_t startTime)
             message += "\"";
             message += ",";
             message += "\"score\":";
-            message += std::to_string(scoreUser.first);
+            message += std::to_string(scoreUser.first.m_score);
             message += "},";
         }
         // remove comma

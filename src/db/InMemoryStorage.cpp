@@ -191,12 +191,14 @@ Result InMemoryStorage::getLeaderboards(
     Leaderboard tmpLeaderboard;
     {
         std::unique_lock<std::mutex> l(m_usersMapGuard);
+        int64_t position = 1;
         for (const auto& user : m_users)
         {
             tmpLeaderboard.emplace(
                 std::piecewise_construct,
-                std::forward_as_tuple(user.second.getWeekScores(currentTime)),
+                std::forward_as_tuple(user.second.getWeekScores(currentTime), position),
                 std::forward_as_tuple(user.first, user.second.m_name));
+            ++ position;
         }
     }
 
@@ -225,7 +227,7 @@ Result InMemoryStorage::getLeaderboards(
     }
 
     Leaderboard currentLeaderboard;
-    std::map<User, uint16_t> userToCount;
+    std::map<User, uint32_t> userToCount;
     for (auto&& lbItem : tmpLeaderboard)
     {
         currentLeaderboard.emplace(lbItem);
