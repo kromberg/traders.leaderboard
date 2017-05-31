@@ -1,7 +1,7 @@
 # Leaderboard web-application
 ## Main page of the web-application. At the left side one can see all leaderboards
 ![Main page](screenshots/main.png "Main page")
-## We can filter leaderboard by name or type
+## We can filter leaderboard by name or id
 ![Search](screenshots/search_leaderboard.png "Search")
 ## This is the Top-10 traders
 ![Top Leaderboard](screenshots/top_leaderboard.png "Top Leaderboard")
