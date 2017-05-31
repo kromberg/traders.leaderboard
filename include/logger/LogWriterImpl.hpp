@@ -142,8 +142,13 @@ inline bool LogWriter::start()
 }
 
 inline void LogWriter::stop()
-{}
-
+{
+    if (Type::FILE == m_type)
+    {
+        fflush(m_file);
+        fclose(m_file);
+    }
+}
 
 template<class... Args>
 inline void LogWriter::write(

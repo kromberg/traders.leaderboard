@@ -70,9 +70,6 @@ public:
 
     template<class... Args>
     Result bindQueueSync(Args... args);
-
-    template<class... Args>
-    Result setQosSync(Args... args);
 };
 } // namespace rabbitmq
 

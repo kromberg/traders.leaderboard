@@ -11,7 +11,7 @@ Result Publisher::startTransactionSync()
 {
     m_transactionMessagesCount = 0;
 
-    SyncObj<Result> result;
+    SyncObj<Result> result(Result::FAILED, 1, 5);
     channel().startTransaction()
         .onSuccess([&] () -> void
             {
@@ -30,7 +30,7 @@ Result Publisher::startTransactionSync()
 
 Result Publisher::commitTransactionSync()
 {
-    SyncObj<Result> result;
+    SyncObj<Result> result(Result::FAILED, 1, 5);
     channel().commitTransaction()
         .onSuccess([&] () -> void
             {
@@ -41,6 +41,25 @@ Result Publisher::commitTransactionSync()
         .onError([&] (const char* message) -> void
             {
                 LOG_ERROR(m_logger, "Cannot commit transaction. Error message: %s",
+                    message);
+                result.set(Result::FAILED);
+            });
+    result.wait();
+    return result.get();
+}
+
+Result Publisher::rollbackTransactionSync()
+{
+    SyncObj<Result> result(Result::FAILED, 1, 5);
+    channel().rollbackTransaction()
+        .onSuccess([&] () -> void
+            {
+                LOG_DEBUG(m_logger, "Transaction was rollbacked.");
+                result.set(Result::SUCCESS);
+            })
+        .onError([&] (const char* message) -> void
+            {
+                LOG_ERROR(m_logger, "Cannot rollback transaction. Error message: %s",
                     message);
                 result.set(Result::FAILED);
             });

@@ -32,6 +32,7 @@ public:
 
     Result startTransactionSync();
     Result commitTransactionSync();
+    Result rollbackTransactionSync();
 
     size_t transactionMessagesCount() const;
 

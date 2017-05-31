@@ -11,16 +11,53 @@
   color: #757575;
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
+.pagination li.active {
+    background-color: #26a69a;
 }
 
 .id-text {
     font-size: 7pt;
 }
 
-.scrollbar {
-    overflow-y: auto;
+body {
+    min-height: 300px;
+    height: 100vh;
+    min-width: 500px;
+    width: 100vw;
+}
+
+#leaderboard-header {
+}
+
+#leaderboard-content {
+    height: 100%;
+}
+
+#leaderboard-nav {
+    height: 100%;
+}
+
+#leaderboards-list {
+    height: 100%;
+    min-height: 200px;
+}
+
+#leaderboards-list-items {
+    height: 100%;
+}
+
+#user-leaderboard {
+    height: 100%;
+}
+
+#user-leaderboard-table {
+    height: 100%;
+    min-height: 200px;
+}
+
+.scrollable {
+    
+    height: 100%;
+
+    overflow: auto;
 }

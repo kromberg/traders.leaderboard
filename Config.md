@@ -40,10 +40,10 @@ db:
 };
 application:
 {
-    // count of rabbitmq consumers
-    consumers-count = 2;
+    // count of message processors
+    processors-count = 2;
     // loop interval in seconds
-    loop-interval = 5;
+    loop-interval = 60;
     // consumer configuration
     consumer:
     {
@@ -90,6 +90,8 @@ tg:
 {
     // count of users generated
     users-count = 1000;
+    // user id offset
+    user-offset = 0;
     // count of deals per user
     deals-per-user = 10;
     // rabbitmq transaction size

@@ -96,6 +96,7 @@ void Logic::loopFunc(const time_t startTime)
         message += "\"";
         message += common::timeToString(startTime);
         message += "\"";
+
         message += ",";
         message += "\"scores\":";
         message += "[";
@@ -120,8 +121,11 @@ void Logic::loopFunc(const time_t startTime)
             message += std::to_string(scoreUser.first.m_score);
             message += "},";
         }
-        // remove comma
-        message.pop_back();
+        if (!userLb.second.empty())
+        {
+            // remove comma
+            message.pop_back();
+        }
         message += "]";
         message += "}";
         message += "}";
@@ -129,7 +133,8 @@ void Logic::loopFunc(const time_t startTime)
         // send message
         if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, message))
         {
-            LOG_ERROR(m_logger, "Cannot publish message");
+            LOG_ERROR(m_logger, "Cannot publish message. Rollback transaction");
+            m_publisher->rollbackTransactionSync();
             return ;
         }
     }
@@ -137,8 +142,43 @@ void Logic::loopFunc(const time_t startTime)
     res = m_publisher->commitTransactionSync();
     if (Result::SUCCESS != res)
     {
-        LOG_ERROR(m_logger, "Cannot commit transaction");
+        LOG_ERROR(m_logger, "Cannot commit transaction. Rollback it");
+        m_publisher->rollbackTransactionSync();
         return ;
+    }
+}
+
+void Logic::processingThreadFunc()
+{
+    while (m_isProcessingThreadsRunning)
+    {
+        std::unique_lock<std::mutex> l(m_processingQueueGuard);
+
+        while (m_isProcessingThreadsRunning && m_processingQueue.empty())
+        {
+            m_processingQueueCv.wait(l);
+        }
+
+        // get item and unlock queue
+        rabbitmq::ProcessingItem item = std::move(m_processingQueue.front());
+        m_processingQueue.pop();
+        l.unlock();
+
+        if (!item.m_channel)
+        {
+            LOG_ERROR(m_logger, "Cannot process item without channel");
+            continue;
+        }
+
+        Result res = m_parser.parseMessage(std::move(item));
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(m_logger, "Cannot process message. Result: %d(%s)",
+                static_cast<int32_t>(res), common::resultToStr(res));
+            item.m_channel->reject(item.m_deliveryTag);
+            continue;
+        }
+        item.m_channel->ack(item.m_deliveryTag);
     }
 }
 
@@ -170,6 +210,7 @@ Result Logic::configure(const libconfig::Config& cfg)
     LOG_INFO(m_logger, "Logic configuration started");
 
     m_loopIntervalSeconds = 60;
+    m_processorsCount = 1;
     try
     {
         Setting& setting = cfg.lookup("application");
@@ -177,12 +218,22 @@ Result Logic::configure(const libconfig::Config& cfg)
         {
             LOG_WARN(m_logger, "Canont find 'loop-interval' parameter in configuration. Default value will be used");
         }
+        if (!setting.lookupValue("processors-count", m_processorsCount))
+        {
+            LOG_WARN(m_logger, "Canont find 'processors-count' parameter in configuration. Default value will be used");
+        }
     }
     catch (const SettingNotFoundException& e)
     {
         LOG_WARN(m_logger, "Canont find 'application' section in configuration. Default values will be used");
     }
-    LOG_INFO(m_logger, "Configuration parameters: <loop-interval: %d seconds>", m_loopIntervalSeconds);
+    if (m_processorsCount < 1)
+    {
+        LOG_ERROR(m_logger, "'processors-count'[%d] parameter is less than 1", m_processorsCount);
+        return Result::CFG_INVALID;
+    }
+    LOG_INFO(m_logger, "Configuration parameters: <loop-interval: %d seconds; processors-count: %d>",
+        m_loopIntervalSeconds, m_processorsCount);
 
     std::string storageTypeStr = "mongo";
     try
@@ -250,6 +301,15 @@ Result Logic::start()
     m_loopIsRunning = true;
     std::thread loopThread(&Logic::loop, this);
     swap(loopThread, m_loopThread);
+
+    m_isProcessingThreadsRunning = true;
+    m_processingThreads.resize(m_processorsCount);
+    for (auto&& processingThread : m_processingThreads)
+    {
+        std::thread tmpThread(&Logic::processingThreadFunc, this);
+        std::swap(tmpThread, processingThread);
+    }
+
     m_state = State::STARTED;
 
     LOG_INFO(m_logger, "Logic start finished");
@@ -264,6 +324,14 @@ void Logic::stop()
     }
 
     LOG_INFO(m_logger, "Logic stop started");
+
+    m_isProcessingThreadsRunning = false;
+    m_processingQueueCv.notify_all();
+    for (auto&& processingThread : m_processingThreads)
+    {
+        processingThread.join();
+    }
+
     m_loopIsRunning = false;
     m_loopThread.join();
     m_state = State::STOPPED;
@@ -345,7 +413,10 @@ Result Logic::onUserDisconnected(const int64_t id)
 
 Result Logic::processMessage(rabbitmq::ProcessingItem&& item)
 {
-    return m_parser.parseMessage(std::move(item));
+    std::unique_lock<std::mutex> l(m_processingQueueGuard);
+    m_processingQueue.push(std::move(item));
+    m_processingQueueCv.notify_all();
+    return Result::SUCCESS;
 }
 
 } // namespace app

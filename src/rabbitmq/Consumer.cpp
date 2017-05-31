@@ -36,13 +36,10 @@ void Consumer::onMessageCallback(
     Result r = m_messageProcessingCallback(std::move(item));
     if (Result::SUCCESS != r)
     {
-        channel().reject(deliveryTag);
         LOG_ERROR(m_logger, "Cannot process message. Result: %d(%s)",
             static_cast<int32_t>(r), common::resultToStr(r));
         return ;
     }
-
-    channel().ack(deliveryTag);
 }
 
 } // namespace rabbitmq

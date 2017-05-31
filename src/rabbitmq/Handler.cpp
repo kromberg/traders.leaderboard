@@ -87,7 +87,7 @@ Result Handler::start()
 
     Result res = Result::SUCCESS;
 
-    SyncObj<Result> channelResult;
+    SyncObj<Result> channelResult(Result::FAILED, 1, 5);;
     // create a AMQP connection object
     m_connection.reset(new AMQP::TcpConnection(&m_handler, *m_address));
     m_channel.reset(new AMQP::TcpChannel(m_connection.get()));

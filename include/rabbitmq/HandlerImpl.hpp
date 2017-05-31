@@ -28,7 +28,7 @@ inline AMQP::TcpChannel* Handler::channelPtr()
 template<class... Args>
 inline Result Handler::declareExchangeSync(Args... args)
 {
-    SyncObj<Result> result;
+    SyncObj<Result> result(Result::FAILED, 1, 5);
     channel().declareExchange(std::forward<Args>(args)...)
         .onSuccess([&] () -> void
             {
@@ -48,7 +48,7 @@ inline Result Handler::declareExchangeSync(Args... args)
 template<class... Args>
 inline Result Handler::declareQueueSync(Args... args)
 {
-    SyncObj<Result> result;
+    SyncObj<Result> result(Result::FAILED, 1, 5);
     channel().declareQueue(std::forward<Args>(args)...)
         .onSuccess([&] (const std::string &name, uint32_t messagecount, uint32_t consumercount) -> void
             {
@@ -69,7 +69,7 @@ inline Result Handler::declareQueueSync(Args... args)
 template<class... Args>
 inline Result Handler::bindQueueSync(Args... args)
 {
-    SyncObj<Result> result;
+    SyncObj<Result> result(Result::FAILED, 1, 5);
     channel().bindQueue(std::forward<Args>(args)...)
         .onSuccess([&] () -> void
             {
@@ -79,26 +79,6 @@ inline Result Handler::bindQueueSync(Args... args)
         .onError([&] (const char* message) -> void
             {
                 LOG_ERROR(m_logger, "Cannot bind queue. Error message: %s",
-                    message);
-                result.set(Result::FAILED);
-            });
-    result.wait();
-    return result.get();
-}
-
-template<class... Args>
-inline Result Handler::setQosSync(Args... args)
-{
-    SyncObj<Result> result;
-    channel().setQos(std::forward<Args>(args)...)
-        .onSuccess([&] () -> void
-            {
-                LOG_INFO(m_logger, "QOS was set");
-                result.set(Result::SUCCESS);
-            })
-        .onError([&] (const char* message) -> void
-            {
-                LOG_ERROR(m_logger, "Cannot set QOS. Error message: %s",
                     message);
                 result.set(Result::FAILED);
             });

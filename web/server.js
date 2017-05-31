@@ -25,6 +25,10 @@ var leaderboards = {
     obj: {},
 
     add: function(leaderboard_obj, limit) {
+        function parseISOLocal(s) {
+            var b = s.split(/\D/);
+            return new Date(b[0], b[1]-1, b[2], b[3], b[4], b[5]);
+        }
         if (!this.obj.hasOwnProperty(leaderboard_obj.id)) {
             this.obj[leaderboard_obj.id] = {}
             tmp_leaderboard_obj = this.obj[leaderboard_obj.id]
@@ -35,10 +39,11 @@ var leaderboards = {
         else {
             tmp_leaderboard_obj = this.obj[leaderboard_obj.id]
         }
-        leaderboard_obj.leaderboard.time = Date.parse(leaderboard_obj.leaderboard.time)
+        leaderboard_obj.leaderboard.time = parseISOLocal(leaderboard_obj.leaderboard.time)
+        leaderboard_obj.leaderboard.time_str = leaderboard_obj.leaderboard.time.toString()
         tmp_leaderboard_obj.trend.push(leaderboard_obj.leaderboard)
         tmp_leaderboard_obj.trend = tmp_leaderboard_obj.trend.sort(function (lhv, rhv) {
-            return lhv.time < rhv.time;
+            return lhv.time > rhv.time;
         })
 
         while (tmp_leaderboard_obj.trend.length > limit) {
@@ -61,7 +66,19 @@ app.get('/leaderboard/:user_id', function (req, res, next) {
         return next("Cannot find leaderboard for user " + user_id)
     }
     // render
-    res.render('index', { 'leaderboards_obj' : leaderboards.obj, 'leaderboard' : leaderboards.obj[user_id]})
+    res.render('index', { 'leaderboards_obj' : leaderboards.obj, 'user_id' : user_id, 'trend_idx' : 0})
+})
+app.get('/leaderboard/:user_id/:trend_idx', function (req, res, next) {
+    var user_id = req.params.user_id
+    var trend_idx = req.params.trend_idx
+    if (!leaderboards.obj.hasOwnProperty(user_id)) {
+        return next("Cannot find leaderboard for user " + user_id)
+    }
+    if (trend_idx >leaderboards.obj[user_id].trend.length) {
+        return next("Cannot find leaderboard for user " + user_id + " with trend index " + trend_idx)
+    }
+    // render
+    res.render('index', { 'leaderboards_obj' : leaderboards.obj, 'user_id' : user_id, 'trend_idx' : trend_idx})
 })
 
 function guid() {
@@ -150,7 +167,7 @@ var server = app.listen(8080, function () {
             leaderboard_obj = JSON.parse(msg.content.toString())
             //console.log(leaderboard_obj)
 
-            leaderboards.add(leaderboard_obj, 2)
+            leaderboards.add(leaderboard_obj, 10)
 
             channel.ack(msg);
         }

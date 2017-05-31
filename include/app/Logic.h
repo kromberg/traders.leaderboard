@@ -32,6 +32,14 @@ private:
     volatile bool m_loopIsRunning = false;
     std::thread m_loopThread;
 
+    int32_t m_processorsCount = 1;
+    std::vector<std::thread> m_processingThreads;
+    volatile bool m_isProcessingThreadsRunning;
+
+    std::queue<rabbitmq::ProcessingItem> m_processingQueue;
+    std::mutex m_processingQueueGuard;
+    std::condition_variable m_processingQueueCv;
+
     rabbitmq::PublisherPtr m_publisher;
     RmqHandlerCfg m_publisherCfg;
 
@@ -41,6 +49,7 @@ private:
 private:
     void loop();
     void loopFunc(const time_t startTime);
+    void processingThreadFunc();
 
 public:
     Logic();

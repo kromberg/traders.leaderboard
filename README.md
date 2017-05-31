@@ -7,6 +7,7 @@ This application depends on the following packages:
  * [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver)
  * [libconfig++](http://www.hyperrealm.com/libconfig/)
  * [Google Test](https://github.com/google/googletest) (for tests only)
+ * [Fantasyname](https://github.com/skeeto/fantasyname) (no need to install, it is embedded)
 ## Installation
 ```bash
 mkdir build

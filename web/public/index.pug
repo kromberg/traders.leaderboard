@@ -8,72 +8,83 @@ html(lang='en')
         script(src='/listjs/list.js')
         script(src='https://code.jquery.com/jquery-2.1.1.min.js')
         script(src='/material-css/js/materialize.js')
+        script(src='/scripts/resize.js')
         link(rel='stylesheet', href='http://fonts.googleapis.com/icon?family=Material+Icons')
         link(rel='stylesheet', href='/material-css/css/materialize.css' media='screen,projection')
         link(rel='stylesheet', href='/css/style.css')
-        meta(name='viewport' content='width=device-width, initial-scale=1.0')
     body(class='teal lighten-5')
-        div(class='card-panel teal')
+        div(id='leaderboard-header' class='card-panel teal')
             a(href='/leaderboards')
                 h3(class='white-text') Leaderboard
-            if leaderboard
-                h6(class='white-text') #{leaderboard.name}
+            if user_id !== undefined
+                h6(class='white-text') #{leaderboards_obj[user_id].name}
             else
                 br
 
-        div(class='row')
-            div(class='col s3')
+        div(id='leaderboard-content' class='row')
+            div(id='leaderboard-nav' class='col s3')
                 div(id='leaderboards-list')
-                    div(class='input-field')
+                    div(id='leaderboards-filter' class='input-field')
                         input(id='leaderboard-search' placeholder='Filter' type='text' class='search')
-                    div(class='list collection scrollbar')
+                    div(id='leaderboards-list-items' class='list collection scrollable')
+                        if user_id !== undefined
+                            a(class='collection-item card-panel active' href='/leaderboard/' + user_id)
+                                h5(class='name black-text') #{leaderboards_obj[user_id].name}
+                                if user_id != -1
+                                    p(class='id id-text black-text' __id=user_id) id=#{user_id}
                         each leaderboard_obj in leaderboards_obj
-                            - var active_class = ''
-                            if leaderboard
-                                if leaderboard_obj.id == leaderboard.id
-                                    - active_class = 'active'
-                            a(class='collection-item card-panel ' + active_class href='/leaderboard/' + leaderboard_obj.id)
-                                h5(class='name black-text') #{leaderboard_obj.name}
-                                p(class='id id-text black-text' __id=leaderboard_obj.id) id=#{leaderboard_obj.id}
+                            if leaderboard_obj.id != user_id
+                                a(class='collection-item card-panel ' href='/leaderboard/' + leaderboard_obj.id)
+                                    h5(class='name black-text') #{leaderboard_obj.name}
+                                    if leaderboard_obj.id != -1
+                                        p(class='id id-text black-text' __id=leaderboard_obj.id) id=#{leaderboard_obj.id}
                 script(src='/scripts/leaderboard.list.js')
 
-            if leaderboard
-                //ul(class='pagination')
-                    li(class='disabled')
-                        a(href='#!')
-                            i(class='material-icons') chevron_left
-                    li(class='active')
-                        a(href='#!') 1
-                    li(class='waves-effect')
-                        a(href='#!') 2
-                    li(class='active')
-                        a(href='#!') 3
-                    li(class='waves-effect')
-                        a(href='#!') 4
-                    li(class='active')
-                        a(href='#!') 5
-                    li(class='waves-effect')
-                        a(href='#!') 6
-                    li(class='waves-effect')
-                        a(href='#!')
-                            i(class='material-icons') chevron_right
+            if user_id !== undefined
+                div(id='user-leaderboard' class='col s9 white')
+                    div
+                        ul(id='user-leaderboard-pagination' class='pagination')
+                            - var li_class = 'waves-effect'
+                            if trend_idx == 0
+                                - li_class = 'disabled'
+                            li(class=li_class)
+                                a(href='/leaderboard/' + user_id + '/' + (trend_idx - 1))
+                                    i(class='material-icons') chevron_left
 
-                div(class='col s9 white scrollbar')
-                    form(action='#')
-                        br
-                        p(class='range-field')
-                            input(type='range' id='test5' min='0' max='100')
-                    table(class='bordered')
-                        thead
-                            tr
-                                th(style='width: 15%;') Position
-                                th(style='width: 15%;') ID
-                                th Name
-                                th(style='width: 30%;') Score
-                        each leaderboard_trend in leaderboard.trend
-                            each user_score in leaderboard_trend.scores
-                                tbody
-                                    th ##{user_score.position}
-                                    th #{user_score.id}
-                                    th #{user_score.name}
-                                    th #{user_score.score}
+                            - var index = 1
+                            each leaderboard_trend in leaderboards_obj[user_id].trend
+                                - var li_class = 'waves-effect'
+                                if trend_idx == index - 1
+                                    - li_class = 'active'
+
+                                li(class=li_class)
+                                    a(class='tooltipped' data-position='bottom' data-delay='100' data-tooltip=leaderboard_trend.time_str href='/leaderboard/' + user_id + '/' + (index - 1)) #{index}
+                                    - index = index + 1
+
+                            - var li_class = 'waves-effect'
+                            if trend_idx == index - 2
+                                - li_class = 'disabled'
+                            li(class=li_class)
+                                a(href='/leaderboard/' + user_id + '/' + (trend_idx - (-1)))
+                                    i(class='material-icons') chevron_right
+
+                    div
+                        h6(id='user-leaderboard-time') #{leaderboards_obj[user_id].trend[trend_idx].time_str}
+
+                    div(id='user-leaderboard-table' class='scrollable')
+                        table(class='bordered')
+                            thead
+                                tr
+                                    th(style='width: 15%;') Position
+                                    th(style='width: 15%;') ID
+                                    th Name
+                                    th(style='width: 30%;') Score
+                                each user_score in leaderboards_obj[user_id].trend[trend_idx].scores
+                                    - var tbody_class = ''
+                                    if user_score.id == user_id
+                                        - tbody_class = 'teal lighten-1'
+                                    tbody(class=tbody_class)
+                                        th ##{user_score.position}
+                                        th #{user_score.id}
+                                        th #{user_score.name}
+                                        th #{user_score.score}

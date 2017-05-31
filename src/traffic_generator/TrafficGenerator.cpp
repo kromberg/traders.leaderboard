@@ -2,6 +2,7 @@
 
 #include <logger/LoggerDefines.h>
 #include <rabbitmq/Publisher.h>
+#include <external/fantasyname/namegen.h>
 
 #include "TrafficGenerator.h"
 
@@ -105,81 +106,103 @@ void Generator::doDeinitialize()
 
 Result Generator::writeData()
 {
+    NameGen::Generator namesGenerator("ssM ssM");
     std::default_random_engine generator;
-    std::uniform_int_distribution<int16_t> distribution(
-        std::numeric_limits<int16_t>::min(),
-        std::numeric_limits<int16_t>::max());
+    std::uniform_int_distribution<uint16_t> distribution(
+        0,
+        std::numeric_limits<uint16_t>::max());
 
     // start a transaction
-    Result res = m_publisher->startTransactionSync();
-    if (Result::SUCCESS != res)
+    Result res = Result::FAILED;
+    do
     {
-        LOG_ERROR(m_logger, "Cannot start transaction");
-        return res;
-    }
+        res = m_publisher->startTransactionSync();
+        if (Result::SUCCESS != res)
+        {
+            LOG_ERROR(m_logger, "Cannot start transaction. Rollback it. Result: %d(%s)",
+                static_cast<int32_t>(res), common::resultToStr(res));
+            m_publisher->rollbackTransactionSync();
+        }
+    } while (res != Result::SUCCESS);
 
     for (size_t i = 0; i < m_cfg.m_usersCount; ++i)
     {
-        std::string idStr = std::to_string(i);
-        if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, "user_registered(" + idStr + ",Egor " + idStr + ")"))
+        std::string idStr = std::to_string(m_cfg.m_userOffset + i);
+        if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey,
+            "user_registered(" + idStr + "," + namesGenerator.toString() + ")"))
         {
             LOG_ERROR(m_logger, "Cannot publish message");
-            return Result::FAILED;
+            continue;
         }
-
+        time_t t = time(nullptr);
         for (size_t deal = 0; deal < m_cfg.m_dealsPerUser; ++ deal)
         {
-            if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, "user_deal(" + idStr + ",2017-05-24T10:10:10," + std::to_string(distribution(generator)) + ")"))
+            if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey,
+                "user_deal(" + idStr + "," + common::timeToString(t) + "," + std::to_string(distribution(generator)) + ")"))
             {
                 LOG_ERROR(m_logger, "Cannot publish message");
-                return Result::FAILED;
+                continue;
             }
-            if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, "user_deal_won(" + idStr + ",2017-05-24T10:10:10," + std::to_string(distribution(generator)) + ")"))
+            if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey,
+                "user_deal_won(" + idStr + "," + common::timeToString(t) + "," + std::to_string(distribution(generator)) + ")"))
             {
                 LOG_ERROR(m_logger, "Cannot publish message");
-                return Result::FAILED;
+                continue;
             }
         }
-        if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey, "user_connected(" + idStr + ")"))
+        if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey,
+            "user_connected(" + idStr + ")"))
         {
             LOG_ERROR(m_logger, "Cannot publish message");
-            return Result::FAILED;
+            continue;
         }
 
-        /*if (!m_publisher->publish(m_cfg.m_exchangeName, m_cfg.m_routingKey, "user_disconnected(" + idStr + ")"))
+        if (rand() % 5 != 0)
         {
-            LOG_ERROR(m_logger, "Cannot publish message");
-            return ;
-        }*/
+            if (!m_publisher->publish(m_publisherCfg.m_exchangeName, m_publisherCfg.m_routingKey,
+                "user_disconnected(" + idStr + ")"))
+            {
+                LOG_ERROR(m_logger, "Cannot publish message");
+                continue;
+            }
+        }
 
         if (m_publisher->transactionMessagesCount() >= m_cfg.m_transactionSize)
         {
             res = m_publisher->commitTransactionSync();
             if (Result::SUCCESS != res)
             {
-                LOG_ERROR(m_logger, "Cannot commit transaction");
-                return res;
+                LOG_ERROR(m_logger, "Cannot commit transaction. Rollback it. Result: %d(%s)",
+                    static_cast<int32_t>(res), common::resultToStr(res));
+                m_publisher->rollbackTransactionSync();
             }
 
-            LOG_INFO(m_logger, "%zu users were processed", i);
+            LOG_INFO(m_logger, "%zu users were processed. last user: %zu", i, m_cfg.m_userOffset + i);
 
-            res = m_publisher->startTransactionSync();
-            if (Result::SUCCESS != res)
+            res = Result::FAILED;
+            do
             {
-                LOG_ERROR(m_logger, "Cannot start transaction");
-                return res;
-            }
+                res = m_publisher->startTransactionSync();
+                if (Result::SUCCESS != res)
+                {
+                    LOG_ERROR(m_logger, "Cannot start transaction. Rollback it. Result: %d(%s)",
+                        static_cast<int32_t>(res), common::resultToStr(res));
+                    m_publisher->rollbackTransactionSync();
+                }
+            } while (res != Result::SUCCESS);
         }
     }
 
     res = m_publisher->commitTransactionSync();
     if (Result::SUCCESS != res)
     {
-        LOG_ERROR(m_logger, "Cannot commit transaction");
-        return res;
+        LOG_ERROR(m_logger, "Cannot commit transaction. it. Result: %d(%s)",
+            static_cast<int32_t>(res), common::resultToStr(res));
+        m_publisher->rollbackTransactionSync();
     }
 
-    LOG_INFO(m_logger, "%zu users were processed", m_cfg.m_usersCount);
+    LOG_INFO(m_logger, "%zu users were processed. last user: %zu",
+        m_cfg.m_usersCount, m_cfg.m_userOffset + m_cfg.m_usersCount);
 
     return Result::SUCCESS;
 }

@@ -151,6 +151,8 @@ void EventLoop::func()
             {
                 LOG_ERROR(m_logger, "FD %d is bad. Errno: %d(%s)",
                     m_connectionItems[i].m_fd, errno, std::strerror(errno));
+                m_connectionItems[i].m_connection->process(
+                    m_connectionItems[i].m_fd, m_connectionItems[i].m_flags);
                 -- res;
             }
             else if (m_pollFds[i].revents & (POLLIN | POLLOUT))

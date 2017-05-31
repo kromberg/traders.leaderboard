@@ -24,7 +24,7 @@ inline Result Consumer::consume(Args... args)
 {
     using namespace std::placeholders;
 
-    SyncObj<Result> result;
+    SyncObj<Result> result(Result::FAILED, 1, 5);
     channel().consume(std::forward<Args>(args)...)
         .onReceived(std::bind(&Consumer::onMessageCallback, this, _1, _2, _3))
         .onSuccess([&] (const std::string& tag) -> void

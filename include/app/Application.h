@@ -18,7 +18,7 @@ class Application : public ApplicationBase
 {
 private:
     // consumers are used to received messages from RabbitMQ
-    std::vector<rabbitmq::ConsumerPtr> m_consumers;
+    rabbitmq::ConsumerPtr m_consumer;
     RmqConsumerCfg m_consumerCfg;
     // publisher is used to send messages to RabbitMQ
     rabbitmq::PublisherPtr m_publisher;

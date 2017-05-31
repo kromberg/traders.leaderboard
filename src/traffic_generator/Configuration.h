@@ -15,6 +15,7 @@ using common::Result;
 struct Configuration
 {
     uint32_t m_usersCount = 1000;
+    uint32_t m_userOffset = 0;
     uint32_t m_dealsPerUser = 10;
     uint32_t m_transactionSize = 100;
 
@@ -33,6 +34,10 @@ inline Result Configuration::read(const libconfig::Config& cfg, logger::Category
         {
             LOG_WARN(log, "Canont find 'users-count' parameter in configuration. Default value will be used");
         }
+        if (!setting.lookupValue("user-offset", m_userOffset))
+        {
+            LOG_WARN(log, "Canont find 'user-offset' parameter in configuration. Default value will be used");
+        }
         if (!setting.lookupValue("deals-per-user", m_dealsPerUser))
         {
             LOG_WARN(log, "Canont find 'deals-per-user' parameter in configuration. Default value will be used");
@@ -47,8 +52,8 @@ inline Result Configuration::read(const libconfig::Config& cfg, logger::Category
         LOG_WARN(log, "Canont find section 'tg' in configuration. Default values will be used");
     }
 
-    LOG_INFO(log, "Traffic generator configuration: <users-count: %u, deals-per-user: %u, transaction-size: %u>",
-        m_usersCount, m_dealsPerUser, m_transactionSize);
+    LOG_INFO(log, "Traffic generator configuration: <users-count: %u, user-offset: %u, deals-per-user: %u, transaction-size: %u>",
+        m_usersCount, m_userOffset, m_dealsPerUser, m_transactionSize);
 
     return Result::SUCCESS;
 }
