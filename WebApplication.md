@@ -13,7 +13,7 @@
 ![User Leaderboard (Time choice)](screenshots/user_leaderboard_time.png "User Leaderboard (Time choice)")
 ## Web-application configuration
 The configuration is located in web/config/default.json
-```json
+```javascript
 {
     // AMQP module config
     "amqp":

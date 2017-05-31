@@ -91,7 +91,7 @@ Example: user_disconnected(666)
 
 # Outgoing Messages
 ## leaderboard
-```json
+```javascript
 {
     "id" : <user id>,
     "name" : "<user name>",
