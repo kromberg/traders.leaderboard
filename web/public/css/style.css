@@ -50,9 +50,12 @@ body {
     height: 100%;
 }
 
-#user-leaderboard-table {
+#user-leaderboard-table-div {
     height: 100%;
     min-height: 200px;
+}
+#user-leaderboard-table {
+    height: 100%;
 }
 
 .scrollable {

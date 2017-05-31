@@ -6,8 +6,8 @@ html(lang='en')
         title Leaderboard
         meta(name='viewport', content='width=device-width, initial-scale=1')
         script(src='/listjs/list.js')
-        script(src='https://code.jquery.com/jquery-2.1.1.min.js')
-        script(src='/material-css/js/materialize.js')
+        script(src='/scripts/jquery-3.2.1.min.js')
+        script(src='/material-css/js/materialize.min.js')
         script(src='/scripts/resize.js')
         link(rel='stylesheet', href='http://fonts.googleapis.com/icon?family=Material+Icons')
         link(rel='stylesheet', href='/material-css/css/materialize.css' media='screen,projection')
@@ -71,8 +71,8 @@ html(lang='en')
                     div
                         h6(id='user-leaderboard-time') #{leaderboards_obj[user_id].trend[trend_idx].time_str}
 
-                    div(id='user-leaderboard-table' class='scrollable')
-                        table(class='bordered')
+                    div(id='user-leaderboard-table-div' class='scrollable')
+                        table(id='user-leaderboard-table' class='bordered')
                             thead
                                 tr
                                     th(style='width: 15%;') Position
