@@ -6,9 +6,12 @@ This application depends on the following packages:
  * [mongo-c-driver](https://github.com/mongodb/mongo-c-driver)
  * [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver)
  * [libconfig++](http://www.hyperrealm.com/libconfig/)
+ * [Node.js](https://nodejs.org/) (for web-app only)
+ * [NPM](https://www.npmjs.com/) (for web-app only)
  * [Google Test](https://github.com/google/googletest) (for tests only)
  * [Fantasyname](https://github.com/skeeto/fantasyname) (no need to install, it is embedded)
 ## Installation
+### Application and Traffic Generator
 ```bash
 mkdir build
 cd build
@@ -18,6 +21,16 @@ make or make <target>
 or
 ./traffic_generator.out tg.cfg
 ```
+
+For more information about Application, please, see [Application information](Application.md)
+### Simple web-application
+```bash
+cd web
+npm install
+npm start
+```
+
+For more information about Web-Application, please, see [Web-Application information](WebApplication.md)
 ## Tests
 ```bash
 mkdir build
@@ -25,45 +38,13 @@ cd build
 cmake ..
 make or make <target>
 ./leaderboard_test.out
+or
+./leaderboard_test.out.coverage
 make coverage
 <browser you like> coverage/index.html
 make clean-coverage
 ```
-## Initialization
-Logger must be configured and started before the application [Logger information](Logger.md)
-```c++
-app::Application& application = app::Application::instance();
-Result res = application.initialize();
-if (Result::SUCCESS != res)
-{
-    // handle error
-}
-```
-## Configuration.
-For more informartion, please, see [Configuration information](Config.md)
-```c++
-Result res = application.configure(cfgName);
-if (Result::SUCCESS != res)
-{
-    // handle error
-}
-```
-## Start
-```c++
-Result res = application.start();
-if (Result::SUCCESS != res)
-{
-    // handle error
-}
-```
-## Stop
-```c++
-application.stop();
-```
-## Deinitialization
-```c++
-application.deinitialization();
-```
+
 # Incoming Messages
 Application is a service that handles the following messages:
 
@@ -110,4 +91,24 @@ Example: user_disconnected(666)
 
 # Outgoing Messages
 ## leaderboard
-# TBD
+```json
+{
+    "id" : <user id>,
+    "name" : "<user name>",
+    "leaderboard" :
+    {
+        "time" : "<time in the format %Y-%m-%dT%H:%M:%S>",
+        "scores" :
+        [
+            "position" : <user position>,
+            "id" : <user id>,
+            "name" : "<user name>",
+            "score" : <user score>,
+        ]
+    }
+}
+```
+For all users connected and top-10 (id: -1) the service will send such messages to RabbitMQ server.
+
+# Bugs and Action Points
+- [ ] It seems that AMQP-CPP library is not stable in some cases (often, on starting and committing transactions), so, I have an action point to rewrite this part using rabbitmq C API [link](https://github.com/alanxz/rabbitmq-c)
