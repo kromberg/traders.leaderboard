@@ -139,3 +139,4 @@ Every X seconds logic loop reads the information about connected users from the 
 - [ ] It seems that AMQP-CPP library is not stable in some cases (often, on starting and committing transactions), so, I have an action point to rewrite this part using rabbitmq C API [link](https://github.com/alanxz/rabbitmq-c)
 - [ ] I think that it is better to split this application into two: one will handle all requests and the other will read data from Database and send leaderboards information
 - [ ] Rework processing queues. We can define own queue for each processor
+- [ ] Measure performance after bug with AMQP-CPP will be fixed
